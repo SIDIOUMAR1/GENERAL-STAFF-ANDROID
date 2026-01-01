@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rlMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_5sdp"
+        android:background="@drawable/round_bg_stroke"
+        android:paddingHorizontal="@dimen/_5sdp"
+        android:paddingVertical="@dimen/_5sdp">
+
+        <TextView
+            android:id="@+id/tvDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center_horizontal"
+            android:text="@string/order_details"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:textColor="@color/red"
+            android:textSize="@dimen/_10sdp"
+
+            />
+
+        <com.makeramen.roundedimageview.RoundedImageView
+            android:id="@+id/rivOrder"
+            android:layout_width="@dimen/_65sdp"
+            android:layout_height="@dimen/_70sdp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/food_placeholder"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvDetail"
+            app:riv_corner_radius="@dimen/_10sdp" />
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:layout_toEndOf="@id/rivOrder"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins_bold"
+            android:maxLines="1"
+            android:textColor="@color/black"
+            android:textSize="@dimen/_12sdp"
+            app:layout_constraintEnd_toStartOf="@id/tvTrackOrder"
+            app:layout_constraintStart_toEndOf="@id/rivOrder"
+            app:layout_constraintTop_toTopOf="@id/rivOrder" />
+
+        <LinearLayout
+            android:id="@+id/llLocation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvName"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:layout_toEndOf="@id/rivOrder"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/rivOrder"
+            app:layout_constraintTop_toBottomOf="@id/tvName">
+
+            <ImageView
+                android:layout_width="@dimen/_10sdp"
+                android:layout_height="@dimen/_10sdp"
+                android:layout_gravity="center_vertical"
+                android:src="@drawable/baseline_location_on_24" />
+
+            <TextView
+                android:id="@+id/tvLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppins_regular"
+                android:maxLines="1"
+                android:textColor="@color/grey_light_textcolor"
+                android:textSize="@dimen/_8sdp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTrackOrder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:background="@drawable/track_now_back"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:paddingVertical="@dimen/_3sdp"
+            android:textColor="#FF4A59"
+            android:textSize="@dimen/_8sdp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/rivOrder" />
+
+        <RelativeLayout
+            android:id="@+id/rlWieht"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_5sdp"
+            app:layout_constraintEnd_toStartOf="@+id/tvAmount"
+            app:layout_constraintStart_toEndOf="@id/rivOrder"
+            app:layout_constraintTop_toBottomOf="@id/tvDateTime">
+
+            <TextView
+                android:id="@+id/tvWeight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/_5sdp"
+                android:background="@drawable/track_now_back"
+                android:backgroundTint="#FEE9D4"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:paddingVertical="@dimen/_3sdp"
+                android:text="@string/waiting_for_driver_acceptence"
+                android:textColor="#AD7846"
+                android:textSize="@dimen/_8sdp" />
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tvAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:background="@drawable/track_now_back"
+            android:backgroundTint="@color/app_theme_color"
+            android:paddingHorizontal="@dimen/_5sdp"
+
+            android:paddingVertical="@dimen/_3sdp"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_8sdp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvDateTime" />
+
+        <LinearLayout
+            android:id="@+id/llContacts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/rivOrder"
+            app:layout_constraintTop_toBottomOf="@+id/rlWieht">
+
+            <TextView
+                android:id="@+id/tvCancel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center_horizontal"
+                android:text="@string/cancel_order"
+                android:textColor="@color/red"
+                android:textSize="@dimen/_10sdp"
+
+                />
+
+            <TextView
+                android:id="@+id/tvContactOrder"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/_5sdp"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center_horizontal"
+                android:text="@string/contact_driver"
+                android:textColor="@color/red"
+                android:textSize="@dimen/_10sdp"
+
+                />
+
+            <TextView
+                android:id="@+id/tvContactUser"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center_horizontal"
+
+                android:text="@string/contact_user"
+                android:textColor="@color/red"
+                android:textSize="@dimen/_10sdp"
+
+                />
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnReOrder"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/_23sdp"
+            android:background="@drawable/round_corner_stroke_back_black"
+            android:backgroundTint="@color/app_theme_color"
+            android:fontFamily="@font/poppins_medium"
+            android:text="@string/re_order"
+            android:textAllCaps="false"
+            android:layout_marginTop="@dimen/_4sdp"
+            android:visibility="gone"
+            android:includeFontPadding="false"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_11sdp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/llContacts"
+            app:layout_constraintTop_toBottomOf="@id/llContacts" />
+
+        <LinearLayout
+            android:id="@+id/rlCustomer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/track_now_back"
+            android:backgroundTint="#FEE9D4"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:paddingVertical="@dimen/_3sdp"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@+id/tvName">
+
+            <TextView
+                android:id="@+id/tvCusterName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/customer_name"
+                android:textColor="#AD7846"
+                android:textSize="@dimen/_10sdp" />
+
+            <TextView
+                android:id="@+id/tvCusterPhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/phone_number"
+                android:textColor="#AD7846"
+                android:textSize="@dimen/_10sdp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDateTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="sijvsdijbvs"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:textColor="@color/grey_textcolor"
+            android:textSize="@dimen/_8sdp"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@+id/rlCustomer" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</RelativeLayout>

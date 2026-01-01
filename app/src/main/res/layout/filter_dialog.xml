@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layoutDirection="locale"
+    android:background="@color/Transparent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/filter_dialoge_back"
+        android:orientation="vertical"
+        android:padding="@dimen/_15sdp">
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="@font/poppins_bold"
+            android:gravity="center"
+            android:text="@string/filter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_14sdp" />
+
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btWeekly"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_40sdp"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:layout_marginVertical="@dimen/_10sdp"
+                android:layout_weight="1"
+                android:background="@drawable/round_white_stroke"
+                android:fontFamily="@font/poppins_medium"
+                android:text="@string/weekly"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_13sdp" />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btMonthly"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_40sdp"
+            android:layout_marginStart="@dimen/_8sdp"
+            android:layout_marginBottom="@dimen/_10sdp"
+            android:layout_weight="1"
+            android:background="@drawable/round_white_stroke"
+            android:fontFamily="@font/poppins_medium"
+            android:text="@string/monthly"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_13sdp" />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btYear"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_40sdp"
+            android:layout_marginStart="@dimen/_8sdp"
+            android:layout_marginBottom="@dimen/_10sdp"
+            android:layout_weight="1"
+            android:background="@drawable/round_white_stroke"
+            android:fontFamily="@font/poppins_medium"
+            android:text="@string/yearly"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_13sdp" />
+    </LinearLayout>
+</RelativeLayout>

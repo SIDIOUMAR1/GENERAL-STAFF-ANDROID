@@ -1,0 +1,42 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.GenralStaff" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/app_theme_color</item>
+        <item name="colorPrimaryVariant">@color/white</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/app_theme_color</item>
+        <item name="colorSecondaryVariant">@color/app_theme_color</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:windowLightStatusBar" tools:ignore="NewApi">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+
+
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+
+    </style>
+
+    <style name="DialogTimePicker" parent="Theme.MaterialComponents.Light.Dialog">
+
+        <item name="android:timePickerStyle">@style/Theme.MyTheme.TimePicker</item>
+
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/black</item>
+
+    </style>
+    <style name="Theme.MyTheme.TimePicker" parent="android:Widget.Material.Light.TimePicker">
+        <item name="android:timePickerMode">clock</item>
+        <item name="android:headerBackground">@color/app_theme_color</item>
+        <item name="android:numbersTextColor">@color/black</item>
+        <item name="android:numbersSelectorColor">@color/white</item>
+        <item name="android:numbersBackgroundColor">@color/app_theme_color</item>
+        <item name="android:amPmTextColor">@color/white</item>
+    </style>
+    <style name="Theme.GenralStaff" parent="Base.Theme.GenralStaff" />
+</resources>

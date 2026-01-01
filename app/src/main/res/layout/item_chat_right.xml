@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="end"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvMessageRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="end"
+        android:layout_marginTop="@dimen/_3sdp"
+        android:textIsSelectable="true"
+        android:layout_marginHorizontal="@dimen/_10sdp"
+        android:background="@drawable/right_chat_back_brown"
+        android:paddingHorizontal="@dimen/_15sdp"
+        android:paddingVertical="@dimen/_10sdp"
+        android:text="@string/great"
+        android:textColor="@color/white"
+       />
+
+    <RelativeLayout
+        android:id="@+id/rl_audio_right"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.rygelouv.audiosensei.player.AudioSenseiPlayerView
+            android:id="@+id/right_audio_player"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true" />
+
+        <ImageView
+            android:id="@+id/iv_audio_view_right"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_35sdp"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="@dimen/_10sdp"
+            android:layout_marginEnd="@dimen/_60sdp"
+            android:background="@drawable/audio_view" />
+    </RelativeLayout>
+
+    <com.makeramen.roundedimageview.RoundedImageView
+        android:id="@+id/right_uploaded_image"
+        android:layout_width="@dimen/_100sdp"
+        android:layout_height="@dimen/_100sdp"
+        android:layout_gravity="end"
+        android:src="@drawable/place_holder"
+        android:visibility="gone"
+        app:riv_corner_radius="@dimen/_16sdp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:orientation="horizontal"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="@dimen/_2sdp"
+        android:layout_marginEnd="@dimen/_10sdp"
+        android:layout_gravity="end"
+        android:layout_height="wrap_content"
+        >
+        <TextView
+            android:id="@+id/tvTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="@dimen/_1sdp"
+            android:text="10:20AM"
+            android:layout_gravity="center_vertical"
+            android:textColor="@color/black"
+            android:textSize="@dimen/_8sdp" />
+        <ImageView
+            android:id="@+id/ivSeen"
+            android:layout_width="@dimen/_17sdp"
+            android:layout_height="@dimen/_13sdp"
+            android:src="@drawable/unseen"/>
+    </LinearLayout>
+
+
+
+</LinearLayout>
+
+

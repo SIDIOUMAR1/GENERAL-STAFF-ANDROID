@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:id="@+id/content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/chat_back_grey"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <ImageView
+        android:id="@+id/ivClear"
+        android:visibility="gone"
+        android:padding="5dp"
+        android:layout_margin="20dp"
+        android:tint="@color/white"
+        android:src="@drawable/cross_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp">
+
+    </ImageView>
+
+    <ImageView
+        android:id="@+id/ivCheck"
+        android:visibility="gone"
+        android:padding="5dp"
+        android:layout_alignParentRight="true"
+        android:layout_margin="20dp"
+        android:src="@drawable/aar_ic_check"
+        android:layout_width="40dp"
+        android:layout_height="40dp">
+
+    </ImageView>
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="-10dp"
+            android:textSize="18dp"
+            android:textColor="@android:color/white"
+            android:fontFamily="@font/poppins_medium"
+
+            />
+
+        <TextView
+            android:id="@+id/timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="60sp"
+            android:textColor="@android:color/white"
+            android:fontFamily="@font/poppins_medium"
+            android:text="00:00:00"/>
+
+
+    </LinearLayout>
+
+    <ImageView
+        android:layout_centerInParent="true"
+        android:id="@+id/gif_image_view"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="#010607"
+        android:layout_alignParentBottom="true">
+
+        <ImageView
+            android:id="@+id/restart"
+            android:layout_width="50dp"
+            android:visibility="gone"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/recordAudio"
+            android:layout_toLeftOf="@+id/recordAudio"
+            android:layout_marginTop="50dp"
+            android:layout_marginRight="20dp"
+
+            android:scaleType="fitCenter"
+            android:src="@drawable/aar_ic_restart"
+            />
+
+        <ImageView
+            android:id="@+id/recordAudio"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerInParent="true"
+            android:layout_marginTop="50dp"
+            android:layout_margin="15dp"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/aar_ic_rec"
+            style="@style/Widget.AppCompat.Button.Borderless"/>
+
+        <ImageView
+            android:id="@+id/play"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:visibility="gone"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@+id/recordAudio"
+            android:layout_toRightOf="@+id/recordAudio"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="20dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/aar_ic_play"
+            />
+
+    </RelativeLayout>
+
+</RelativeLayout>

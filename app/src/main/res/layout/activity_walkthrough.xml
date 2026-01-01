@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".auth.WalkthroughActivity">
+
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPaser"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="-50dp"
+        android:layout_above="@id/llBottom" />
+
+
+
+
+    <RelativeLayout
+        android:id="@+id/llBottom"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_200sdp"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/walkthrough_bottom_back">
+
+        <TextView
+            android:id="@+id/tvOne"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fastest"
+            android:layout_marginStart="@dimen/_20sdp"
+            android:layout_marginTop="@dimen/_15sdp"
+            android:textSize="@dimen/_16sdp"
+            android:fontFamily="@font/poppins_bold"
+            android:textColor="@color/black"/>
+        <TextView
+            android:id="@+id/tvTwo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/delivery"
+            android:layout_below="@id/tvOne"
+            android:layout_marginStart="@dimen/_20sdp"
+            android:textSize="@dimen/_16sdp"
+            android:fontFamily="@font/poppins_bold"
+            android:textColor="@color/black"/>
+        <TextView
+            android:id="@+id/tvThree"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/lorem"
+            android:layout_below="@id/tvTwo"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:fontFamily="@font/poppins_regular"
+            android:layout_marginStart="@dimen/_20sdp"
+            android:textSize="@dimen/_12sdp"
+            />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnNext"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_43sdp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="@dimen/_20sdp"
+            android:layout_marginBottom="@dimen/_30sdp"
+            android:backgroundTint="@color/app_theme_color"
+            android:paddingHorizontal="@dimen/_25sdp"
+            android:text="@string/get_started"
+            android:textAllCaps="false"
+            android:elevation="@dimen/_5sdp"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_14sdp" />
+
+        <com.zhpan.indicator.IndicatorView
+            android:id="@+id/indicatorView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@id/btnNext"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="@dimen/_20sdp" />
+    </RelativeLayout>
+
+</RelativeLayout>

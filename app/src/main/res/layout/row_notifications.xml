@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/_10sdp"
+        android:layout_marginVertical="@dimen/_5sdp"
+        android:background="@drawable/round_grey_stroke"
+        android:paddingHorizontal="@dimen/_8sdp"
+        android:paddingVertical="@dimen/_5sdp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/rivOrder"
+            android:layout_width="@dimen/_46sdp"
+            android:layout_height="@dimen/_46sdp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/food_dummy_fav"
+            app:riv_corner_radius="@dimen/_10sdp" />
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_10sdp"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/rivOrder"
+            android:layout_toStartOf="@+id/tvDateTime"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="Katani Dhaba Preparing Order"
+            android:textColor="@color/black"
+            android:textSize="@dimen/_13sdp" />
+
+
+
+
+        <TextView
+            android:id="@+id/tvDateTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tvName"
+            android:layout_alignParentEnd="true"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:fontFamily="@font/poppins_regular"
+            android:text="10:10AM"
+            android:textColor="@color/grey_textcolor"
+            android:textSize="@dimen/_9sdp" />
+
+    </RelativeLayout>
+
+</RelativeLayout>

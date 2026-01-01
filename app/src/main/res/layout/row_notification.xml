@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_marginHorizontal="@dimen/_5sdp"
+        android:layout_marginVertical="@dimen/_5sdp"
+        android:padding="@dimen/_5sdp"
+        android:background="@drawable/round_bg_stroke"
+        android:layout_height="wrap_content">
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/civProfile"
+            android:layout_width="@dimen/_45sdp"
+            android:layout_height="@dimen/_45sdp"
+            android:src="@drawable/food_dummy_fav"
+            android:scaleType="centerCrop"/>
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/lorem"
+            android:textColor="@color/black"
+            android:textSize="@dimen/_12sdp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins_medium"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:layout_toEndOf="@id/civProfile"/>
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:10AM"
+            android:textSize="@dimen/_10sdp"
+            android:layout_below="@id/tvName"
+            android:layout_alignParentEnd="true"
+            android:fontFamily="@font/poppins_regular"
+            />
+
+    </RelativeLayout>
+
+</RelativeLayout>
