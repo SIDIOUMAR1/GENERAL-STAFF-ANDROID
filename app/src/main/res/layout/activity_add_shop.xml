@@ -1008,7 +1008,7 @@
 
 
                                 <TextView
-                                        android:id="@+id/tvOpenTimeSunday"
+                                    android:id="@+id/tvOpenTimeSunday"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:layout_above="@id/viewLineSunday"
@@ -1105,6 +1105,135 @@
                         android:textSize="@dimen/_12sdp" />
 
 
+                </RelativeLayout>
+
+                <!-- ✅ VOCAL EMPLACEMENT RESTAURANT (NOUVEAU) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/_20sdp"
+                    android:layout_marginTop="@dimen/_10sdp"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="@string/shop_location_audio"
+                    android:textColor="#939393"
+                    android:textSize="@dimen/_12sdp" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/_20sdp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:id="@+id/rlRecordViewShopLocation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone">
+
+                            <ImageView
+                                android:id="@+id/ivCrossShopLocation"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_centerVertical="true"
+                                android:layout_marginTop="@dimen/_5sdp"
+                                android:layout_marginEnd="7dp"
+                                android:layout_marginBottom="@dimen/_5sdp"
+                                android:padding="@dimen/_5sdp"
+                                android:src="@drawable/cross_icon"
+                                app:tint="@color/black" />
+
+                            <TextView
+                                android:id="@+id/timerShopLocation"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerVertical="true"
+                                android:layout_marginTop="@dimen/_5sdp"
+                                android:layout_marginEnd="@dimen/_5sdp"
+                                android:layout_marginBottom="@dimen/_5sdp"
+                                android:layout_toEndOf="@+id/ivCrossShopLocation"
+                                android:fontFamily="@font/poppins_medium"
+                                android:includeFontPadding="false"
+                                android:text="00:00"
+                                android:textColor="@color/black"
+                                android:textSize="@dimen/_14sdp" />
+
+                            <ImageView
+                                android:id="@+id/ivGifShopLocation"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/audiogif" />
+
+                            <TextView
+                                android:id="@+id/tvSaveShopLocation"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:layout_marginEnd="7dp"
+                                android:fontFamily="@font/poppins_medium"
+                                android:includeFontPadding="false"
+                                android:text="@string/save"
+                                android:textColor="@color/ios_red"
+                                android:textSize="@dimen/_14sdp" />
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:id="@+id/rl_audio_play_shop_location"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone">
+
+                            <com.rygelouv.audiosensei.player.AudioSenseiPlayerView
+                                android:id="@+id/right_audio_player_shop_location"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_toStartOf="@+id/tvDeleteShopLocation" />
+
+                            <ImageView
+                                android:id="@+id/iv_audio_view_shop_location"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/_35sdp"
+                                android:layout_centerVertical="true"
+                                android:layout_marginStart="@dimen/_10sdp"
+                                android:layout_marginEnd="@dimen/_60sdp"
+                                android:layout_toStartOf="@+id/tvDeleteShopLocation"
+                                android:background="@drawable/audio_view" />
+
+                            <TextView
+                                android:id="@+id/tvDeleteShopLocation"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:layout_marginEnd="7dp"
+                                android:fontFamily="@font/poppins_medium"
+                                android:includeFontPadding="false"
+                                android:text="@string/delete"
+                                android:textColor="@color/ios_red"
+                                android:textSize="@dimen/_14sdp" />
+                        </RelativeLayout>
+
+                        <ImageView
+                            android:id="@+id/ivMicShopLocation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="@dimen/_30sdp"
+                            android:layout_gravity="center_vertical"
+                            android:padding="@dimen/_5sdp"
+                            android:src="@drawable/mic_icpon" />
+
+                    </LinearLayout>
+
+                    <View
+                        android:id="@+id/view16"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/_1sdp"
+                        android:layout_alignParentBottom="true"
+                        android:background="#BFBFBF" />
                 </RelativeLayout>
 
             </LinearLayout>

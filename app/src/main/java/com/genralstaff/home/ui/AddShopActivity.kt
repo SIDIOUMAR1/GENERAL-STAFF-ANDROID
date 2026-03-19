@@ -43,7 +43,18 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-
+import android.Manifest
+import android.content.ContextWrapper
+import android.content.pm.PackageManager
+import android.media.MediaRecorder
+import android.os.CountDownTimer
+import android.os.Environment
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.genralstaff.base.profileBaseUrl
+import com.genralstaff.utils.RecordAudioActivity
+import java.util.Random
+import java.io.IOException
 class AddShopActivity : ImagePickerActivityUtility(), TimePickerDialog.OnTimeSetListener {
     var imagePath = ""
     var category_id = ""
@@ -66,7 +77,14 @@ class AddShopActivity : ImagePickerActivityUtility(), TimePickerDialog.OnTimeSet
     var location = ""
     var status = ""
     var description = ""
-
+    var shopLocationAudio = ""  // ✅ NOUVEAU : Vocal emplacement restaurant
+    var startRecording = false
+    var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
+    var AudioSavePathInDevice: String? = null
+    var countDownTimer: CountDownTimer? = null
+    var mediaRecorder: MediaRecorder? = null
+    var random: Random? = null
+    private var elapsedTime: Long = 0
 
     private lateinit var authViewModel: AuthViewModel
 private val progressDialog by lazy { CustomProgressDialog() }
@@ -99,6 +117,8 @@ private val progressDialog by lazy { CustomProgressDialog() }
         super.onCreate(savedInstanceState)
         binding = ActivityAddShopBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        random = Random()
+        checkPermission()
         type = intent.getStringExtra("type").toString()
         if (type=="edit"){
             shopTimings = intent.getSerializableExtra("shop_timings") as? List<GetShopsResponse.Body.Data.ShopTiming>
@@ -154,6 +174,56 @@ private val progressDialog by lazy { CustomProgressDialog() }
         }
         binding.ivPick.setOnClickListener {
             getImage(this, 0)
+        }
+        // ✅ VOCAL EMPLACEMENT RESTAURANT
+        binding.ivMicShopLocation!!.setOnClickListener {
+            binding.rlRecordViewShopLocation.visibility = View.VISIBLE
+            binding.ivMicShopLocation.visibility = View.GONE
+            Glide.with(this)
+                .load(R.drawable.audiogif)
+                .into(binding.ivGifShopLocation!!)
+            startRecording()
+        }
+
+        binding.tvSaveShopLocation!!.setOnClickListener {
+            Glide.with(this).clear(binding.ivGifShopLocation!!)
+            binding.ivGifShopLocation!!.setImageDrawable(null)
+
+            binding.rlRecordViewShopLocation.visibility = View.GONE
+            if (mediaRecorder != null) {
+                mediaRecorder!!.stop()
+            }
+            startRecording = false
+            countDownTimer!!.cancel()
+
+            val file: File = File(AudioSavePathInDevice!!)
+            if (file.exists()) {
+                val audioPath = AudioSavePathInDevice!!
+                val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
+                authViewModel.uploadFiles(imagePart)
+                AudioSavePathInDevice = ""
+            }
+        }
+
+        binding.ivCrossShopLocation.setOnClickListener {
+            shopLocationAudio = ""
+            Glide.with(this).clear(binding.ivGifShopLocation!!)
+            binding.ivGifShopLocation!!.setImageDrawable(null)
+            binding.rlRecordViewShopLocation.visibility = View.GONE
+            binding.ivMicShopLocation.visibility = View.VISIBLE
+            binding.rlAudioPlayShopLocation.visibility = View.GONE
+            if (mediaRecorder != null) {
+                mediaRecorder!!.stop()
+            }
+            startRecording = false
+            countDownTimer!!.cancel()
+            binding.timerShopLocation!!.text = "00:00"
+        }
+
+        binding.tvDeleteShopLocation.setOnClickListener {
+            shopLocationAudio = ""
+            binding.ivMicShopLocation.visibility = View.VISIBLE
+            binding.rlAudioPlayShopLocation.visibility = View.GONE
         }
         binding.tvLocation.setOnClickListener {
             openPlacePicker()
@@ -245,7 +315,9 @@ private val progressDialog by lazy { CustomProgressDialog() }
                                 binding.ccplogin.selectedCountryCodeWithPlus.toString()
                                     .getTextRequestBody()
                             hashMap["shop_timings"] = shopTimingsArray.toString().getTextRequestBody()
-
+                            if (shopLocationAudio.isNotEmpty()) {
+                                hashMap["shop_location_audio"] = shopLocationAudio.getTextRequestBody()
+                            }
 //                            hashMap["close_time"] = binding.tvCloseTime.text.toString().getTextRequestBody()
 
                             if (imagePath.isNotEmpty()) {
@@ -287,7 +359,9 @@ private val progressDialog by lazy { CustomProgressDialog() }
                                     binding.ccplogin.selectedCountryCodeWithPlus.toString()
                                         .getTextRequestBody()
                                 hashMap["shop_timings"] = shopTimingsArray.toString().getTextRequestBody()
-
+                                if (shopLocationAudio.isNotEmpty()) {
+                                    hashMap["shop_location_audio"] = shopLocationAudio.getTextRequestBody()
+                                }
 //                                hashMap["open_time"] = binding.tvOpenTime.text.toString().getTextRequestBody()
 //                                hashMap["close_time"] = binding.tvCloseTime.text.toString().getTextRequestBody()
                                 val imagePart: MultipartBody.Part =
@@ -459,6 +533,15 @@ private val progressDialog by lazy { CustomProgressDialog() }
                         binding.ccplogin.setCountryForPhoneCode(country_code.toInt())
                         binding.tvLocation.text = location
                         binding.edDescription.setText(description)
+                        // ✅ Charger le vocal existant si présent
+                        val existingAudio = intent.getStringExtra("shop_location_audio") ?: ""
+                        if (existingAudio.isNotEmpty()) {
+                            shopLocationAudio = existingAudio
+                            binding.ivMicShopLocation.visibility = View.GONE
+                            binding.rlAudioPlayShopLocation.visibility = View.VISIBLE
+                            val audio_url = profileBaseUrl + existingAudio
+                            binding.rightAudioPlayerShopLocation.setAudioTarget(audio_url)
+                        }
                         Glide.with(this).load(imageURL + image).placeholder(
                             R.drawable.place_holder
                         ).into(binding.civProfile)
@@ -474,11 +557,23 @@ private val progressDialog by lazy { CustomProgressDialog() }
             response?.let {
                 if (it.code == 200) {
                     progressDialog.hide()
+                    Utils.showToast(this, if (type == "edit") "Boutique mise à jour ✅" else "Boutique ajoutée ✅")
                     finish()
                 }
             }
         }
-
+        authViewModel.onUploadProfileResponse().observe(this) { response ->
+            response?.let {
+                if (it.code == 200) {
+                    shopLocationAudio = it.body.media.toString()
+                    binding.ivMicShopLocation.visibility = View.GONE
+                    binding.rlAudioPlayShopLocation.visibility = View.VISIBLE
+                    val audio_url = profileBaseUrl + shopLocationAudio
+                    binding.rightAudioPlayerShopLocation.setAudioTarget(audio_url)
+                    binding.rlRecordViewShopLocation.visibility = View.GONE
+                }
+            }
+        }
         authViewModel.categories()
     }
 
@@ -538,5 +633,113 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 }
             }
         }
+    // ✅ FONCTIONS D'ENREGISTREMENT AUDIO
+    private fun startRecording() {
+        if (!startRecording) {
+            if (checkPermission()) {
+                var cw: ContextWrapper = ContextWrapper(applicationContext)
+                var directory = cw.getDir("imageDir", android.content.Context.MODE_PRIVATE)
 
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    AudioSavePathInDevice = directory.absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.m4a"
+                } else {
+                    AudioSavePathInDevice = Environment.getExternalStorageDirectory().absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.m4a"
+                }
+
+                mediaRecorderReady()
+                try {
+                    startRecording = true
+                    mediaRecorder!!.prepare()
+                    mediaRecorder!!.start()
+
+                    countDownTimer = object : CountDownTimer(300000, 1000) {
+                        override fun onTick(millisUntilFinished: Long) {
+                            elapsedTime = 300 - (millisUntilFinished / 1000)
+                            val minutes = elapsedTime / 60
+                            val seconds = elapsedTime % 60
+                            binding.timerShopLocation!!.text = String.format(Locale.US, "%02d:%02d", minutes, seconds)
+                        }
+
+                        override fun onFinish() {
+                            startRecording = false
+                            binding.timerShopLocation!!.text = "05:00"
+                            if (mediaRecorder != null) {
+                                mediaRecorder!!.stop()
+                                val file: File = File(AudioSavePathInDevice!!)
+                                if (file.exists()) {
+                                    val audioPath = AudioSavePathInDevice!!
+                                    val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
+                                    authViewModel.uploadFiles(imagePart)
+                                }
+                            }
+                        }
+                    }.start()
+                } catch (e: IllegalStateException) {
+                    e.printStackTrace()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            } else {
+                requestPermissions()
+            }
+        } else {
+            countDownTimer!!.cancel()
+            countDownTimer!!.onFinish()
+            startRecording = false
+        }
+    }
+
+    private fun mediaRecorderReady() {
+        mediaRecorder = MediaRecorder()
+        try {
+            mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
+            mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            mediaRecorder!!.setAudioEncodingBitRate(128000)
+            mediaRecorder!!.setAudioSamplingRate(44100)
+            mediaRecorder!!.setOutputFile(AudioSavePathInDevice)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun CreateRandomAudioFileName(string: Int): String {
+        val stringBuilder = StringBuilder(string)
+        var i = 0
+        while (i < string) {
+            stringBuilder.append(RandomAudioFileName[random!!.nextInt(RandomAudioFileName.length)])
+            i++
+        }
+        return stringBuilder.toString()
+    }
+
+    private fun requestPermissions() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this@AddShopActivity,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                RecordAudioActivity.RequestPermissionCode
+            )
+        } else {
+            ActivityCompat.requestPermissions(
+                this@AddShopActivity,
+                arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.RECORD_AUDIO
+                ),
+                RecordAudioActivity.RequestPermissionCode
+            )
+        }
+    }
+
+    fun checkPermission(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val result1 = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.RECORD_AUDIO)
+            return result1 == PackageManager.PERMISSION_GRANTED
+        } else {
+            val result = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            val result1 = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.RECORD_AUDIO)
+            return result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED
+        }
+    }
 }

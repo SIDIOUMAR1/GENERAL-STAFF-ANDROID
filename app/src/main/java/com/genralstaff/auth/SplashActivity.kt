@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-
+import com.genralstaff.UpdateManager
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
     lateinit var binding: ActivitySplashBinding
@@ -43,34 +43,26 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySplashBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         Glide.with(this)
             .load(R.drawable.splash_icon)
             .into(binding.ivImage)
+
         val lang = MyApplication.prefs!!.getPrefrenceLanguage(LANGUAGE, "ar").toString()
         when (lang) {
-            "en" -> {
-                MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "en")
-
-            }
-
-            "fr" -> {
-                MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "fr")
-
-
-            }
-
-            else -> {
-                MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "ar")
-            }
+            "en" -> MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "en")
+            "fr" -> MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "fr")
+            else -> MyApplication.prefs!!.savePrefrenceLanguage(LANGUAGE, "ar")
         }
-//        changeLanguage(this@SplashActivity)
+
         changeLanguageSplash(this)
-
-        setUpPermission()
         printKeyHash(this)
+
+        // Check mise à jour
+        UpdateManager.checkForUpdate(this) {
+            setUpPermission()
+        }
     }
-
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun setUpPermission() {
         mErrorString = SparseIntArray()

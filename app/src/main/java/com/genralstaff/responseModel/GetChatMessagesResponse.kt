@@ -13,7 +13,7 @@ data class GetChatMessagesResponse(
         val message_type: Int,
         var is_read: Int,
         val createdAt: String,
-        val updatedAt: String
+        val updatedAt: String,
     )
 
     data class Room(
@@ -22,6 +22,7 @@ data class GetChatMessagesResponse(
         val receiver_id: Int,
         val shop_id: Int,
         val last_message_id: Int,
+        val order_id: Int?,
         val completed_time: String?,
         val shop_latitude: String?,
         val shop_longitude: String?,
@@ -30,7 +31,11 @@ data class GetChatMessagesResponse(
         val createdAt: String,
         val updatedAt: String,
         val distance: String?,
-        val shop_detail: ShopDetail
+        val shop_detail: ShopDetail,
+
+        //  NOUVEAUX CHAMPS AJOUTÉS
+        val audio_user_location: String?,   // vocal emplacement utilisateur (1er vocal)
+        val audio_summary: String?,         // vocal résumé commande (2ème vocal)
     )
 
     data class ShopDetail(

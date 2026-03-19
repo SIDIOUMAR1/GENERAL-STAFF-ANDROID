@@ -36,7 +36,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-
+import com.genralstaff.responseModel.AvailableDriversResponse
+import com.genralstaff.network.retrofitService
+import retrofit2.Response
 
 class AuthViewModel : BaseViewModel() {
     private val authRepo = AuthRepo()
@@ -480,6 +482,12 @@ class AuthViewModel : BaseViewModel() {
         }
     }
 
+    suspend fun getAvailableDrivers(
+        shopId: String,
+        driverType: String?
+    ): Response<AvailableDriversResponse> {
+        return retrofitService.getAvailableDrivers(shopId, driverType)
+    }
     private val homeExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         var errorMessage = throwable.message
         if (throwable is UnknownHostException || throwable is SocketTimeoutException) {

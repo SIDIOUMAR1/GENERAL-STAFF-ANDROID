@@ -243,5 +243,13 @@
     <string name="send_user_location_to_driver">Envoyer l\'emplacement de l\'utilisateur au livreur</string>
     <string name="send_shop_location_to_driver">Envoyer l\'emplacement du restaurant au livreur</string>
     <string name="at_least_one_location_required">Au moins une localisation (utilisateur ou restaurant) doit être envoyée au livreur</string>
-
+    <string name="order_summary_audio">Résumé de la commande (Audio)</string>
+    <string name="shop_location_audio">Message vocal pour l\'emplacement du restaurant</string>
+    <string name="share_with_client">Partager avec le client</string>
+    <string name="conversation_shared">Conversation partagée avec succès</string>
+    <string name="already_shared">Déjà partagé avec le client</string>
+    <string name="assign_directly_to_driver">Assigner directement à un chauffeur</string>
+    <string name="select_driver">Sélectionner un chauffeur</string>
+    <string name="search_driver_by_name_or_phone">Rechercher par nom ou numéro</string>
+    <string name="no_available_drivers">Aucun chauffeur disponible</string>
 </resources>

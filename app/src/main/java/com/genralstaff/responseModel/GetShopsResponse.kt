@@ -35,9 +35,10 @@ data class GetShopsResponse(
             val longitude: String,
             val name: String,
             val user_id: Int,
-
+            val shop_location_audio: String? = null,
             // ✅ Add Serializable list
             val shop_timings: List<ShopTiming> = listOf()
+
         ) : Serializable {  // ✅ Also make Data serializable
             data class Category(
                 val name: String

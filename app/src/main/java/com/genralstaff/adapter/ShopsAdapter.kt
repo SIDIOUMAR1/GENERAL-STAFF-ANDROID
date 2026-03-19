@@ -89,6 +89,7 @@ class ShopsAdapter(
                     .putExtra("longitude", ordersList[position].longitude.toString())
                     .putExtra("description", ordersList[position].description.toString())
                     .putExtra("category_id", ordersList[position].category_id.toString())
+                    .putExtra("shop_location_audio", ordersList[position].shop_location_audio ?: "")
             )
         }
 

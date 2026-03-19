@@ -64,8 +64,8 @@ import retrofit2.http.PartMap
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.QueryMap
-
-
+import retrofit2.Response
+import com.genralstaff.responseModel.AvailableDriversResponse
 interface RetrofitInterface {
     @POST(LOGIN)
     suspend fun login(@Body map: HashMap<String, String>): LoginResponse
@@ -195,7 +195,11 @@ interface RetrofitInterface {
     suspend fun orders2(@QueryMap param: Map<String, String>): OrderHistoryResponse
     @GET(CHECK_ORDER)
     suspend fun checkOrder(@QueryMap param: Map<String, String>): CheckOrderResponse
-
+    @GET("drivers/available-for-order")
+    suspend fun getAvailableDrivers(
+        @Query("shop_id") shopId: String,
+        @Query("driver_type") driverType: String? = null
+    ): Response<AvailableDriversResponse>
 
 
 }

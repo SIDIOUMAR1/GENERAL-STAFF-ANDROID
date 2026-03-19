@@ -19,6 +19,7 @@ import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
@@ -33,6 +34,7 @@ import com.genralstaff.adapter.ProductsAdapter
 import com.genralstaff.base.profileBaseUrl
 import com.genralstaff.databinding.ActivityAddOrderBinding
 import com.genralstaff.network.ErrorType
+import com.genralstaff.responseModel.AvailableDriversResponse
 import com.genralstaff.responseModel.CategoriesResponse
 import com.genralstaff.responseModel.GetChatMessagesResponse
 import com.genralstaff.responseModel.ShopItemsResponse
@@ -51,7 +53,6 @@ import com.google.android.libraries.places.widget.AutocompleteActivity
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.Gson
-
 import com.rygelouv.audiosensei.player.AudioSenseiListObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +66,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.Random
-
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     var latitude = ""
     var longitude = ""
@@ -76,6 +78,8 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     var shop_name = ""
     var product_id = "0"
     var audio = ""
+    var audioSummary = ""
+    var currentRecordingType = ""
     var startRecording = false
     var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
     var playStatus = "0"
@@ -85,11 +89,25 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     var random: Random? = null
     private var elapsedTime: Long = 0
 
+    // ✅ NOUVELLES VARIABLES AJOUTÉES
+    private var assignDirectly = false
+    private var selectedDriverId: Int? = null
+    private var selectedDriverObj: AvailableDriversResponse.Driver? = null
+    private var availableDrivers = ArrayList<AvailableDriversResponse.Driver>()
+    private var driversLoaded = false
+    private val avatarColors = listOf(
+        "#6C63FF", "#FF6584", "#43A6C6", "#F7B731", "#26C6DA",
+        "#EF5350", "#66BB6A", "#FFA726", "#AB47BC", "#29B6F6"
+    )
+
+    //  Ajouter cette variable en haut de la classe
+    private var pendingUploadType = ""
     private lateinit var socketManager: SocketManager
     private val activityScope = CoroutineScope(Dispatchers.Main)
-private val progressDialog by lazy { CustomProgressDialog() }
+    private val progressDialog by lazy { CustomProgressDialog() }
 
     lateinit var binding: ActivityAddOrderBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddOrderBinding.inflate(layoutInflater)
@@ -114,8 +132,9 @@ private val progressDialog by lazy { CustomProgressDialog() }
         binding.ivBack.setOnClickListener {
             finish()
         }
-        binding.ivMic!!.setOnClickListener {
 
+        binding.ivMic!!.setOnClickListener {
+            currentRecordingType = "user_location"
             binding.rlRecordView.visibility = View.VISIBLE
             binding.ivMic.visibility = View.GONE
             Glide.with(this)
@@ -124,91 +143,146 @@ private val progressDialog by lazy { CustomProgressDialog() }
             startResording()
         }
 
+        binding.ivMicSummary!!.setOnClickListener {
+            currentRecordingType = "order_summary"
+            binding.rlRecordView.visibility = View.VISIBLE
+            binding.ivMicSummary.visibility = View.GONE
+            Glide.with(this)
+                .load(R.drawable.audiogif)
+                .into(binding.ivGif!!)
+            startResording()
+        }
+
         binding.tvSave!!.setOnClickListener {
             Glide.with(this).clear(binding.ivGif!!)
-            binding.ivGif!!.setImageDrawable(null) // Optionally clear the ImageView content
-
+            binding.ivGif!!.setImageDrawable(null)
             binding.rlRecordView.visibility = View.GONE
-//            binding.rlChatView.visibility = View.VISIBLE
             if (mediaRecorder != null) {
-                mediaRecorder!!.stop()
-            }
-            startRecording = false
-            countDownTimer!!.cancel()
+                try {
+                    mediaRecorder!!.stop()
+                } catch (e: RuntimeException) {
+                    e.printStackTrace()
+                    mediaRecorder!!.release()
+                    mediaRecorder = null
+                }
 
-            val file: File = File(AudioSavePathInDevice!!)
-            if (file.exists()) {
+                startRecording = false
+              countDownTimer!!.cancel()
+
+              val file: File = File(AudioSavePathInDevice!!)
+             if (file.exists()) {
                 val audioPath = AudioSavePathInDevice!!
-                val imagePart: MultipartBody.Part =
-                    prepareFilePart("media", File(audioPath))
-                authViewModel.uploadFiles(imagePart)
-                AudioSavePathInDevice = ""
+                val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
+                 // Capturer le type AVANT l'upload async
+                 pendingUploadType = currentRecordingType
+                 authViewModel.uploadFiles(imagePart)
+                 AudioSavePathInDevice = ""
             }
         }
+        }
+
+
 
         binding.ivCross.setOnClickListener {
             audio = ""
             Glide.with(this).clear(binding.ivGif!!)
-            binding.ivGif!!.setImageDrawable(null) // Optionally clear the ImageView content
+            binding.ivGif!!.setImageDrawable(null)
             binding.rlRecordView.visibility = View.GONE
             binding.ivMic.visibility = View.VISIBLE
             binding.rlAudioPlay.visibility = View.GONE
             if (mediaRecorder != null) {
                 mediaRecorder!!.stop()
-
             }
             startRecording = false
             countDownTimer!!.cancel()
             startRecording = false
             binding.timer!!.text = "00:00"
-
         }
+
+        // ✅ APRÈS — tvDelete est TOUJOURS le bouton du 1er vocal
         binding.tvDelete.setOnClickListener {
             audio = ""
+            binding.ivMic.visibility = View.VISIBLE  // ← toujours le 1er micro
+            binding.rlAudioPlay.visibility = View.GONE
             Glide.with(this).clear(binding.ivGif!!)
-            binding.ivGif!!.setImageDrawable(null) // Optionally clear the ImageView content
+            binding.ivGif!!.setImageDrawable(null)
             binding.rlRecordView.visibility = View.GONE
             binding.tvDelete.visibility = View.GONE
-            binding.ivMic.visibility = View.VISIBLE
-            binding.rlAudioPlay.visibility = View.GONE
-
+        }
+        binding.tvDeleteSummary.setOnClickListener {
+            audioSummary = ""
+            binding.ivMicSummary.visibility = View.VISIBLE
+            binding.rlAudioPlaySummary.visibility = View.GONE
         }
 
-        // List of driver types
         val driverTypes = arrayOf(
             getString(R.string.bicycle),
-            getString(R.string.motorcycle), getString(R.string.human), getString(R.string.car)
+            getString(R.string.motorcycle),
+            getString(R.string.human),
+            getString(R.string.car)
         )
         binding.tvSelectDriverType.text = driverTypes.joinToString(", ")
-
-        // Boolean array to track checked items
         val checkedItems = BooleanArray(driverTypes.size) { false }
 
-        // When the user clicks on the TextView, show the multi-choice dialog
         binding.tvSelectDriverType.setOnClickListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.driver_type))
                 .setMultiChoiceItems(driverTypes, checkedItems) { _, which, isChecked ->
-                    // Update the checkedItems array when user selects or unselects an item
                     checkedItems[which] = isChecked
                 }
                 .setPositiveButton(getString(R.string.done)) { dialog, _ ->
-                    // Handle the 'Done' action
                     val selectedDriverTypes = mutableListOf<String>()
                     for (i in driverTypes.indices) {
-                        if (checkedItems[i]) {
-                            selectedDriverTypes.add(driverTypes[i])
-                        }
+                        if (checkedItems[i]) selectedDriverTypes.add(driverTypes[i])
                     }
-                    // Set the selected items to the TextView
                     binding.tvSelectDriverType.text = selectedDriverTypes.joinToString(", ")
+                    // ✅ AJOUTER CES 5 LIGNES
+                    driversLoaded = false
+                    availableDrivers.clear()
+                    selectedDriverId = null
+                    selectedDriverObj = null
+                    hideSelectedDriverCard()
+                    binding.btnSelectDriver.visibility = View.VISIBLE
                     dialog.dismiss()
                 }
                 .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
                 }
                 .show()
+        }
 
+        // ✅ NOUVEAUX LISTENERS AJOUTÉS
+        binding.cbAssignDirectly.setOnCheckedChangeListener { _, isChecked ->
+            assignDirectly = isChecked
+            if (isChecked) {
+                val typeSelected = binding.tvSelectDriverType.text.toString()
+                if (typeSelected.isEmpty() || typeSelected == getString(R.string.select_driver_type)) {
+                    Utils.showErrorDialog(this, "Veuillez d'abord sélectionner le type de véhicule")
+                    binding.cbAssignDirectly.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+                binding.llDriverSelection.visibility = View.VISIBLE
+                if (selectedDriverObj != null) showSelectedDriverCard(selectedDriverObj!!)
+                if (!driversLoaded) loadAvailableDrivers()
+            } else {
+                binding.llDriverSelection.visibility = View.GONE
+                hideSelectedDriverCard()
+                // selectedDriverId et selectedDriverObj sont gardés en mémoire !
+            }
+        }
+
+        // ✅ NOUVEAU CODE (FONCTIONNE)
+        binding.btnSelectDriver.setOnClickListener {
+            if (availableDrivers.isEmpty()) loadAvailableDrivers()
+            else showDriverPickerDialog()
+        }
+
+        binding.tvChangeDriver.setOnClickListener {
+            hideSelectedDriverCard()
+            binding.btnSelectDriver.visibility = View.VISIBLE
+            selectedDriverId = null
+            selectedDriverObj = null
+            showDriverPickerDialog()
         }
 
         binding.ivCopyShopLocation.setOnClickListener {
@@ -217,15 +291,18 @@ private val progressDialog by lazy { CustomProgressDialog() }
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this, "Shop Location copied", Toast.LENGTH_SHORT).show()
         }
+
         binding.ivCopyLocation.setOnClickListener {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Shop Location", binding.tvLocation.text)
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this, "Location copied", Toast.LENGTH_SHORT).show()
         }
+
         binding.btnCancel.setOnClickListener {
             finish()
         }
+
         binding.btnSubmit.setOnClickListener {
             if (binding.tvSelectDriverType.text.toString().isEmpty()) {
                 Utils.showErrorDialog(this, getString(R.string.please_select_driver_type))
@@ -235,35 +312,48 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 Utils.showErrorDialog(this, getString(R.string.please_enter_location))
             } else if (binding.cbSendShopLocation.isChecked && (latitudeShop.isEmpty() || latitudeShop == "null" || longitudeShop.isEmpty() || longitudeShop == "null")) {
                 Utils.showErrorDialog(this, getString(R.string.please_enter_shop_location))
-            } else if (!binding.cbSendUserLocation.isChecked && !binding.cbSendShopLocation.isChecked) {
-                Utils.showErrorDialog(this, getString(R.string.at_least_one_location_required))
             } else {
                 addOrderSocket()
             }
         }
+
         binding.tvLocation.setOnClickListener {
             openPlacePicker()
         }
+
         binding.tvShopLocation.setOnClickListener {
             openPlacePickerNew()
         }
+    }
+    override fun onResume() {
+        super.onResume()
+        Log.e("AddOrderActivity", "📡 onResume() - Activation du listener")
+        socketManager.onRegister(this)
+        socketManager.onaddorderListener()  // ✅ CRITICAL: Active le listener
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.e("AddOrderActivity", "📡 onPause() - Désactivation")
+        socketManager.unRegister(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.e("AddOrderActivity", "📡 onDestroy()")
+        socketManager.unRegister(this)
     }
 
     private fun startResording() {
         if (!startRecording) {
             if (checkPermission()) {
-
                 var cw: ContextWrapper = ContextWrapper(applicationContext)
                 var directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
 
-
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//                    AudioSavePathInDevice = directory.absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.mp3"
                     AudioSavePathInDevice =
                         directory.absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.m4a"
                 } else {
-//                    AudioSavePathInDevice = Environment.getExternalStorageDirectory().absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.mp3"
                     AudioSavePathInDevice =
                         Environment.getExternalStorageDirectory().absolutePath + "/" + CreateRandomAudioFileName(
                             5
@@ -272,41 +362,42 @@ private val progressDialog by lazy { CustomProgressDialog() }
 
                 mediaRecorderReady()
                 try {
-
                     startRecording = true
                     playStatus = "0"
-
                     mediaRecorder!!.prepare()
                     mediaRecorder!!.start()
 
                     countDownTimer =
-                        object : CountDownTimer(300000, 1000) { // 300,000 milliseconds = 5 minutes
+                        object : CountDownTimer(300000, 1000) {
                             override fun onTick(millisUntilFinished: Long) {
-                                elapsedTime =
-                                    300 - (millisUntilFinished / 1000) // Calculate elapsed time in seconds
+                                elapsedTime = 300 - (millisUntilFinished / 1000)
                                 val minutes = elapsedTime / 60
                                 val seconds = elapsedTime % 60
                                 binding.timer!!.text =
                                     String.format(Locale.US, "%02d:%02d", minutes, seconds)
                             }
 
+                            // ✅ APRÈS — protégé avec try-catch
                             override fun onFinish() {
                                 startRecording = false
                                 binding.timer!!.text = "05:00"
                                 if (mediaRecorder != null) {
-                                    mediaRecorder!!.stop()
+                                    try {
+                                        mediaRecorder!!.stop()
+                                    } catch (e: RuntimeException) {
+                                        e.printStackTrace()
+                                        mediaRecorder!!.release()
+                                        mediaRecorder = null
+                                        return
+                                    }
                                     val file: File = File(AudioSavePathInDevice!!)
                                     if (file.exists()) {
-
                                         val audioPath = AudioSavePathInDevice!!
                                         val imagePart: MultipartBody.Part =
                                             prepareFilePart("media", File(audioPath))
                                         authViewModel.uploadFiles(imagePart)
-
                                     }
                                 }
-
-
                             }
                         }.start()
                 } catch (e: IllegalStateException) {
@@ -324,25 +415,20 @@ private val progressDialog by lazy { CustomProgressDialog() }
         }
     }
 
-
     private fun mediaRecorderReady() {
         mediaRecorder = MediaRecorder()
         try {
             mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
             mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-
-            // Set higher quality parameters
-            mediaRecorder!!.setAudioEncodingBitRate(128000) // 128 kbps
-            mediaRecorder!!.setAudioSamplingRate(44100)     // CD quality
-
+            mediaRecorder!!.setAudioEncodingBitRate(128000)
+            mediaRecorder!!.setAudioSamplingRate(44100)
             mediaRecorder!!.setOutputFile(AudioSavePathInDevice)
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Error initializing recorder: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     fun CreateRandomAudioFileName(string: Int): String {
         val stringBuilder = StringBuilder(string)
@@ -355,16 +441,13 @@ private val progressDialog by lazy { CustomProgressDialog() }
     }
 
     private fun requestPermissions() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.requestPermissions(
                 this@AddOrderActivity,
                 arrayOf(Manifest.permission.RECORD_AUDIO),
                 RecordAudioActivity.RequestPermissionCode
             )
-
         } else {
-
             ActivityCompat.requestPermissions(
                 this@AddOrderActivity,
                 arrayOf(
@@ -374,7 +457,6 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 RecordAudioActivity.RequestPermissionCode
             )
         }
-
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -386,12 +468,10 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 Log.e("fileUrlSong", recordingFilePath.toString())
                 val file: File = File(recordingFilePath)
                 if (file.exists()) {
-
                     val audioPath = recordingFilePath!!
                     val imagePart: MultipartBody.Part =
                         prepareFilePart("media", File(audioPath))
                     authViewModel.uploadFiles(imagePart)
-
                 }
             } catch (e: java.lang.Exception) {
                 e.printStackTrace()
@@ -404,7 +484,6 @@ private val progressDialog by lazy { CustomProgressDialog() }
     }
 
     fun checkPermission(): Boolean {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val result1 = ContextCompat.checkSelfPermission(
                 applicationContext,
@@ -422,21 +501,34 @@ private val progressDialog by lazy { CustomProgressDialog() }
             )
             return result == PackageManager.PERMISSION_GRANTED &&
                     result1 == PackageManager.PERMISSION_GRANTED
-
         }
-
     }
-
 
     private fun initializeSockets() {
+        Log.e("AddOrderActivity", "🔧 DÉBUT initializeSockets()")
+
         socketManager = MyApplication.mInstance?.getSocketManager()!!
+        Log.e("AddOrderActivity", "✅ SocketManager obtenu")
+
         socketManager.init()
+        Log.e("AddOrderActivity", "✅ Socket initialisé")
+
         socketManager.onRegister(this)
+        Log.e("AddOrderActivity", "✅ Observer enregistré")
+
+        socketManager.onaddorderListener()
+        Log.e("AddOrderActivity", "✅ Listener add_order activé")
+
+        // Vérifier si le socket est connecté
+        if (socketManager.isConnected()) {
+            Log.e("AddOrderActivity", "✅ Socket CONNECTÉ")
+        } else {
+            Log.e("AddOrderActivity", "❌ Socket NON CONNECTÉ")
+        }
+
         viewModelSetupAndResponse()
         callShopsApi()
-
     }
-
     private fun openPlacePicker() {
         val fields =
             listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG, Place.Field.ADDRESS)
@@ -455,6 +547,19 @@ private val progressDialog by lazy { CustomProgressDialog() }
 
     private fun addOrderSocket() {
         val description = binding.edDescription.text.toString()
+
+        // ✅ LOGS DE DEBUG
+        Log.e("AddOrder", "==========================================")
+        Log.e("AddOrder", "DÉBUT addOrderSocket()")
+        Log.e("AddOrder", "assignDirectly = $assignDirectly")
+        Log.e("AddOrder", "selectedDriverId = $selectedDriverId")
+        Log.e("AddOrder", "==========================================")
+
+        if (assignDirectly && selectedDriverId == null) {
+            Utils.showErrorDialog(this, "Veuillez sélectionner un chauffeur")
+            return
+        }
+
         if (Utils.internetAvailability(this)) {
             progressDialog.show(this)
             val selectedDriverTypes = binding.tvSelectDriverType.text.toString()
@@ -471,8 +576,8 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 }
 
             val driverTypeEnglish = selectedDriverTypes.joinToString(",")
-
             val sub_admin_id = MyApplication.prefs?.getString("userId")
+
             val jsonObjects = JSONObject().apply {
                 put("user_id", userId!!.toInt())
                 put("sub_admin_id", sub_admin_id!!.toInt())
@@ -482,11 +587,23 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 put("shop_address", binding.tvShopLocation.text.toString())
                 put("driver_type", driverTypeEnglish.trim())
 
+                // ✅ LOGS DÉTAILLÉS ICI
+                if (assignDirectly && selectedDriverId != null) {
+                    put("assigned_driver_id", selectedDriverId!!)
+                    Log.e("AddOrder", "✅ AJOUT DE assigned_driver_id = $selectedDriverId")
+                } else {
+                    Log.e("AddOrder", "❌ PAS D'ASSIGNATION DIRECTE")
+                    Log.e("AddOrder", "   Raison: assignDirectly=$assignDirectly, selectedDriverId=$selectedDriverId")
+                }
+
                 if (description.isNotEmpty()) {
                     put("description", description)
                 }
                 if (audio.isNotEmpty()) {
-                    put("audio", audio)
+                    put("audio_user_location", audio)
+                }
+                if (audioSummary.isNotEmpty()) {
+                    put("audio_summary", audioSummary)
                 }
 
                 if (binding.cbSendUserLocation.isChecked &&
@@ -510,7 +627,16 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 put("delivery_charge", binding.edFee.text.toString())
             }
 
-            Log.e("jsonObjects: ", jsonObjects.toString())
+            // ✅ LOG DU JSON COMPLET
+            Log.e("AddOrder", "==========================================")
+            Log.e("AddOrder", "JSON ENVOYÉ AU SOCKET:")
+            Log.e("AddOrder", jsonObjects.toString())
+            Log.e("AddOrder", "==========================================")
+
+            Log.e("AddOrder", "audio variable: '$audio'")
+            Log.e("AddOrder", "audioSummary variable: '$audioSummary'")
+            Log.e("AddOrder", "pendingUploadType: '$pendingUploadType'")
+
             socketManager.addOrderSocket(jsonObjects)
 
         } else {
@@ -520,7 +646,7 @@ private val progressDialog by lazy { CustomProgressDialog() }
 
     fun getEnglishString(context: Context, resId: Int): String {
         val config = Configuration(context.resources.configuration)
-        config.setLocale(Locale.ENGLISH) // Force English locale
+        config.setLocale(Locale.ENGLISH)
         return context.createConfigurationContext(config).resources.getString(resId)
     }
 
@@ -533,8 +659,6 @@ private val progressDialog by lazy { CustomProgressDialog() }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
 
-
-
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
@@ -545,23 +669,22 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 if (position != 0) {
                     product_id = shopItems[position - 1].id.toString()
                 }
-                // Do something with the selected item
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
             }
         }
     }
 
     var shopItems = ArrayList<ShopItemsResponse.Body.Data>()
-    private fun viewModelSetupAndResponse() {
 
+    private fun viewModelSetupAndResponse() {
         authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
         authViewModel.getError().observe(this) {
             Utils.showToast(this, it)
         }
+
         authViewModel.progressDialogData().observe(this) { isShowProgress ->
             if (isShowProgress) {
                 progressDialog.show(this)
@@ -569,30 +692,42 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 progressDialog.hide()
             }
         }
+
         authViewModel.onShowErrorCode().observe(this) {
             when (it) {
                 ErrorType.UNAUTHORIZED -> {
                     sessionExpire()
                 }
-
                 else -> {}
             }
         }
+
         authViewModel.onUploadProfileResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
-                    audio = it.body.media.toString()
-                    binding.apply {
-                        rlRecordView.visibility = View.GONE
-                        ivMic.visibility = View.GONE
-                        rlAudioPlay.visibility = View.VISIBLE
+                    // ✅ Utiliser pendingUploadType au lieu de currentRecordingType
+                    if (pendingUploadType == "user_location") {
+                        audio = it.body.media.toString()
+                        binding.ivMic.visibility = View.GONE
+                        binding.rlAudioPlay.visibility = View.VISIBLE
                         val audio_url = profileBaseUrl + audio
                         binding.rightAudioPlayer.setAudioTarget(audio_url)
+                    } else if (pendingUploadType == "order_summary") {
+                        audioSummary = it.body.media.toString()
+                        binding.ivMicSummary.visibility = View.GONE
+                        binding.rlAudioPlaySummary.visibility = View.VISIBLE
+                        val audio_url = profileBaseUrl + audioSummary
+                        binding.rightAudioPlayerSummary.setAudioTarget(audio_url)
                     }
-
+                    pendingUploadType = ""  // ✅ Réinitialiser après
+                    binding.rlRecordView.visibility = View.GONE
+                    binding.apply {
+                        rlRecordView.visibility = View.GONE
+                    }
                 }
             }
         }
+
         authViewModel.onShopItemsResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
@@ -601,7 +736,6 @@ private val progressDialog by lazy { CustomProgressDialog() }
                     shopItems.addAll(it.body.data)
                     if (shopItems.isEmpty()) {
                         shopItems2.add(getString(R.string.no_products_available))
-
                     } else {
                         shopItems2.add(getString(R.string.select_product))
                     }
@@ -609,23 +743,16 @@ private val progressDialog by lazy { CustomProgressDialog() }
                         shopItems2.add(shopItems[i].name)
                     }
                     popUp()
-
                 }
             }
         }
+
         authViewModel.onShopDetailResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200 && it.body != null) {
                     val data = it.body
-
-
-
-
                     binding.apply {
-
                         edShopDescription.setText(data.description)
-
-
                     }
                 }
             }
@@ -655,6 +782,7 @@ private val progressDialog by lazy { CustomProgressDialog() }
                 }
             }
         }
+
     var startActivityForResultNew =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == AutocompleteActivity.RESULT_OK) {
@@ -670,28 +798,51 @@ private val progressDialog by lazy { CustomProgressDialog() }
         }
 
     override fun onResponseArray(event: String, args: JSONArray) {
-
     }
 
     override fun onResponse(event: String, args: JSONObject) {
         when (event) {
             SocketManager.add_order_listner -> {
+                // ✅ AJOUTEZ CES LOGS
+                Log.e("AddOrderActivity", "📥 RÉPONSE REÇUE: add_order_listner")
+                Log.e("AddOrderActivity", "📦 ARGS: $args")
+
                 activityScope.launch {
                     progressDialog.hide()
 
-                    // Extract 'notAdded' from the 'args' JSONObject
-                    val notAdded = args.optInt("notAdded", -1)  // -1 is the default if not found
+                    val notAdded = args.optInt("notAdded", -1)
 
                     if (notAdded == 0) {
-                        // Show alert if notAdded is 0
+                        // Cas 1: Pas de chauffeurs trouvés
+                        Log.e("AddOrderActivity", "❌ Aucun chauffeur disponible")
                         showAlert(getString(R.string.no_driver_type_found_for_this_order))
                     } else {
-                        // Continue with the intent if notAdded is not 0
-                        startActivity(
-                            Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
-                                .putExtra("type", "current_orders")
-                                .putExtra("types", "add_orders")
-                        )
+                        // Cas 2: Commande créée avec succès
+                        // Vérifier si on a reçu un order_detail valide
+                        val orderId = args.optInt("id", -1)
+
+                        if (orderId != -1) {
+                            Log.e("AddOrderActivity", "✅ Commande créée ID: $orderId")
+                            Utils.showToast(this@AddOrderActivity, "Commande créée avec succès")
+
+                            startActivity(
+                                Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
+                                    .putExtra("type", "current_orders")
+                                    .putExtra("types", "add_orders")
+                            )
+                            finish()
+                        } else {
+                            Log.e("AddOrderActivity", "⚠️ Réponse reçue mais format inattendu")
+                            // Quand même fermer l'activité car la commande est probablement créée
+                            Utils.showToast(this@AddOrderActivity, "Commande envoyée")
+
+                            startActivity(
+                                Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
+                                    .putExtra("type", "current_orders")
+                                    .putExtra("types", "add_orders")
+                            )
+                            finish()
+                        }
                     }
                 }
             }
@@ -708,10 +859,246 @@ private val progressDialog by lazy { CustomProgressDialog() }
             .show()
     }
 
-
     override fun onError(event: String, vararg args: Array<*>) {
     }
 
     override fun onBlockError(event: String, args: String) {
     }
+
+    // ✅ NOUVELLES FONCTIONS AJOUTÉES À LA FIN
+    private fun loadAvailableDrivers() {
+        if (!Utils.internetAvailability(this)) {
+            Utils.showToast(this, getString(R.string.no_internet_connection))
+            return
+        }
+
+        progressDialog.show(this)
+
+        val selectedDriverTypes = binding.tvSelectDriverType.text.toString()
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it != getString(R.string.select_driver_type) }
+            .map { selectedType ->
+                when (selectedType) {
+                    getString(R.string.bicycle) -> getEnglishString(this, R.string.bicycle)
+                    getString(R.string.motorcycle) -> getEnglishString(this, R.string.motorcycle)
+                    getString(R.string.human) -> getEnglishString(this, R.string.human)
+                    getString(R.string.car) -> getEnglishString(this, R.string.car)
+                    else -> selectedType
+                }
+            }
+            .joinToString(",")
+
+        // ✅ AJOUTEZ CE LOG
+        Log.e("LoadDrivers", "Shop ID: $shop_id")
+        Log.e("LoadDrivers", "Driver Types: $selectedDriverTypes")
+
+        activityScope.launch {
+            try {
+                val response = authViewModel.getAvailableDrivers(shop_id, selectedDriverTypes)
+                progressDialog.hide()
+
+                // ✅ AJOUTEZ CE LOG
+                Log.e("LoadDrivers", "Response Code: ${response.code()}")
+                Log.e("LoadDrivers", "Response Successful: ${response.isSuccessful}")
+                Log.e("LoadDrivers", "Response Body: ${response.body()}")
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+
+                    // ✅ AJOUTEZ CE LOG
+                    Log.e("LoadDrivers", "Body Code: ${body.code}")
+                    Log.e("LoadDrivers", "Drivers Count: ${body.body.drivers.size}")
+
+                    if (body.code == 200) {
+                        availableDrivers.clear()
+                        availableDrivers.addAll(body.body.drivers)
+
+                        // ✅ AJOUTEZ CE LOG
+                        Log.e("LoadDrivers", "Available Drivers: ${availableDrivers.size}")
+
+                        if (availableDrivers.isEmpty()) {
+                            Utils.showErrorDialog(this@AddOrderActivity,
+                                "Aucun chauffeur disponible")
+                            binding.cbAssignDirectly.isChecked = false
+                            binding.llDriverSelection.visibility = View.GONE
+                        } else {
+                            // ✅ AJOUTEZ CE LOG
+                            Log.e("LoadDrivers", "Calling setupDriverAdapter()")
+                            driversLoaded = true  // ← AJOUTER CETTE LIGNE
+                            showDriverPickerDialog()
+
+                            // ✅ AJOUTEZ CE LOG APRÈS setupDriverAdapter
+                            Log.e("LoadDrivers", "Adapter set, driver count: ${availableDrivers.size}")
+                        }
+                    } else {
+                        // ✅ AJOUTEZ CE LOG
+                        Log.e("LoadDrivers", "Error: ${body.message}")
+                        Utils.showToast(this@AddOrderActivity, body.message)
+                        binding.cbAssignDirectly.isChecked = false
+                        binding.llDriverSelection.visibility = View.GONE
+                    }
+                } else {
+                    // ✅ AJOUTEZ CE LOG
+                    Log.e("LoadDrivers", "Response not successful or body null")
+                    Utils.showToast(this@AddOrderActivity,
+                        "Erreur lors du chargement des chauffeurs")
+                    binding.cbAssignDirectly.isChecked = false
+                    binding.llDriverSelection.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                progressDialog.hide()
+                // ✅ MODIFIEZ CE LOG
+                Log.e("LoadDrivers", "Exception: ${e.message}", e)
+                e.printStackTrace()
+                Utils.showToast(this@AddOrderActivity,
+                    "Erreur: ${e.message ?: "Unknown"}")
+                binding.cbAssignDirectly.isChecked = false
+                binding.llDriverSelection.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showDriverPickerDialog() {
+        val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(
+            this, R.style.BottomSheetDialogTheme
+        )
+        val view = layoutInflater.inflate(R.layout.dialog_driver_picker, null)
+        bottomSheet.setContentView(view)
+
+        val etSearch = view.findViewById<android.widget.EditText>(R.id.etSearch)
+        val ivClose = view.findViewById<android.widget.ImageView>(R.id.ivClose)
+        val ivClearSearch = view.findViewById<android.widget.ImageView>(R.id.ivClearSearch)
+        val rvDrivers = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvDrivers)
+        val tvDriverCount = view.findViewById<android.widget.TextView>(R.id.tvDriverCount)
+        val llEmpty = view.findViewById<android.widget.LinearLayout>(R.id.llEmpty)
+
+        tvDriverCount.text = "${availableDrivers.size} chauffeur(s) disponible(s)"
+
+        val filteredList = ArrayList<AvailableDriversResponse.Driver>(availableDrivers)
+        val adapter = DriverPickerAdapter(filteredList) { driver ->
+            selectedDriverId = driver.id
+            selectedDriverObj = driver
+            showSelectedDriverCard(driver)
+            binding.btnSelectDriver.visibility = View.GONE
+            bottomSheet.dismiss()
+            Utils.showToast(this, "✅ ${driver.name} sélectionné")
+        }
+        rvDrivers.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        rvDrivers.adapter = adapter
+
+        etSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val query = s.toString().trim().lowercase()
+                ivClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                filteredList.clear()
+                filteredList.addAll(
+                    if (query.isEmpty()) availableDrivers
+                    else availableDrivers.filter { d ->
+                        d.name.lowercase().contains(query) || d.phone.contains(query)
+                    }
+                )
+                adapter.notifyDataSetChanged()
+                tvDriverCount.text = "${filteredList.size} résultat(s)"
+                llEmpty.visibility = if (filteredList.isEmpty()) View.VISIBLE else View.GONE
+                rvDrivers.visibility = if (filteredList.isEmpty()) View.GONE else View.VISIBLE
+            }
+        })
+
+        ivClearSearch.setOnClickListener { etSearch.setText("") }
+        ivClose.setOnClickListener { bottomSheet.dismiss() }
+        bottomSheet.show()
+    }
+
+    private fun showSelectedDriverCard(driver: AvailableDriversResponse.Driver) {
+        binding.tvSelectedDriverInitials.text = driver.name.take(2).uppercase()
+        binding.tvSelectedDriverName.text = driver.name
+        binding.tvSelectedDriverInfo.text = "${driver.phone}  •  ${getVehicleEmoji(driver.vehicle_type)} ${driver.vehicle_type}  •  ${driver.distance} km"
+        binding.llSelectedDriverCard.visibility = View.VISIBLE
+    }
+
+    private fun hideSelectedDriverCard() {
+        binding.llSelectedDriverCard.visibility = View.GONE
+    }
+
+    private fun getVehicleEmoji(type: String?): String = when (type?.lowercase()) {
+        "bicycle" -> "🚲"
+        "motorcycle" -> "🏍️"
+        "car" -> "🚗"
+        "human" -> "🚶"
+        else -> "🚗"
+    }
+    inner class DriverPickerAdapter(
+        private val drivers: List<AvailableDriversResponse.Driver>,
+        private val onSelect: (AvailableDriversResponse.Driver) -> Unit
+    ) : RecyclerView.Adapter<DriverPickerAdapter.VH>() {
+
+        inner class VH(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+            val tvInitials: android.widget.TextView = view.findViewById(R.id.tvInitials)
+            val tvName: android.widget.TextView = view.findViewById(R.id.tvDriverName)
+            val tvPhone: android.widget.TextView = view.findViewById(R.id.tvDriverPhone)
+            val tvVehicle: android.widget.TextView = view.findViewById(R.id.tvVehicleType)
+            val tvDistance: android.widget.TextView = view.findViewById(R.id.tvDistance)
+            val llCall: android.widget.LinearLayout = view.findViewById(R.id.llCall)
+            val llMessage: android.widget.LinearLayout = view.findViewById(R.id.llMessage)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            VH(layoutInflater.inflate(R.layout.item_driver_card, parent, false))
+
+        override fun getItemCount() = drivers.size
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val driver = drivers[position]
+            val colorIndex = Math.abs(driver.name.hashCode()) % avatarColors.size
+            holder.tvInitials.text = driver.name.take(2).uppercase()
+            holder.tvInitials.background.setColorFilter(
+                android.graphics.Color.parseColor(avatarColors[colorIndex]),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            )
+            holder.tvName.text = driver.name
+            holder.tvPhone.text = driver.phone
+            holder.tvVehicle.text = "${getVehicleEmoji(driver.vehicle_type)} ${driver.vehicle_type ?: "N/A"}"
+            holder.tvDistance.text = "${driver.distance} km"
+            holder.itemView.setOnClickListener { onSelect(driver) }
+            // ✅ BOUTON APPEL
+            holder.llCall.setOnClickListener {
+                val phone = driver.phone
+                if (phone.isNotEmpty()) {
+                    val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:$phone"))
+                    it.context.startActivity(intent)
+                }
+            }
+
+// ✅ BOUTON MESSAGE
+            // ✅ BOUTON MESSAGE
+            holder.llMessage.setOnClickListener {
+                selectedDriverId = driver.id
+                selectedDriverObj = driver
+                showSelectedDriverCard(driver)
+                binding.btnSelectDriver.visibility = View.GONE
+
+                try {
+                    startActivity(
+                        Intent(this@AddOrderActivity, ChatActivity::class.java)
+                            .putExtra("otherUserId", driver.id.toString())
+                            .putExtra("otherUserName", driver.name ?: "")
+                            .putExtra("phone", driver.phone ?: "")
+                            .putExtra("otherUserImage", driver.profile_pic ?: "")
+                            .putExtra("shopId", shop_id ?: "")
+                            .putExtra("order_id", "")
+                            .putExtra("type", "staff_driver")
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Utils.showToast(this@AddOrderActivity, "Erreur: ${e.message}")
+                }
+            }
+
+        }
+    }
+
+
 }

@@ -5,7 +5,6 @@ import com.genralstaff.base.BASE_URL
 import com.genralstaff.base.SOCKET_URL
 import com.genralstaff.utils.MyApplication.Companion.prefs
 
-
 import io.socket.client.IO
 import io.socket.client.Socket
 import io.socket.emitter.Emitter
@@ -41,12 +40,11 @@ class SocketManager {
         val driver_change_statusemiter = "driver_change_status"//emiter
         val driver_change_status = "driver_change_status"//listner
 
-
         val update_locationemiter = "update_location"//emiter
         val update_location = "update_location"//listner
 
         val add_order_emitter = "add_order"//emiter
-        val add_order_listner = "add_order"//listner
+        val add_order_listner = "add_order_listner"//listner  // ✅ AVEC _listner
 
         val cancel_order_emitter = "cancel_order"//emiter
         val cancel_order_listner = "cancel_order"//listner
@@ -54,8 +52,6 @@ class SocketManager {
         val read_chat = "read_chat"//emitter listner
 
         val re_order = "re_order"//emitter listner
-
-
     }
 
     private var mSocket: Socket? = null
@@ -76,6 +72,7 @@ class SocketManager {
         }
         return mSocket
     }
+
     fun onRegister(observer: Observer) {
         if (observerList != null && !observerList!!.contains(observer)) {
             observerList!!.clear()
@@ -103,6 +100,7 @@ class SocketManager {
             initializeSocket()
         }
     }
+
     private fun initializeSocket() {
         if (mSocket == null) {
             mSocket = getSocket()
@@ -158,8 +156,6 @@ class SocketManager {
     private val onConnectListener = Emitter.Listener { args ->
         try {
             Log.e("TAG", "SOCKET Connected SuccessFully")
-            // val data = args[1] as JSONObject
-            // val data = args[1] as JSONObject
         } catch (ex: Exception) {
             ex.localizedMessage
         }
@@ -181,9 +177,7 @@ class SocketManager {
         }
     }
 
-
     fun getChatUserList(jsonObject: JSONObject?) {
-
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -220,7 +214,6 @@ class SocketManager {
     }
 
     fun getChatList(jsonObject: JSONObject?) {
-
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -244,6 +237,7 @@ class SocketManager {
             Log.i("Socket", "getChatList Called")
         }
     }
+
     fun read_chat(jsonObject: JSONObject?) {
         if (jsonObject != null) {
             try {
@@ -261,6 +255,7 @@ class SocketManager {
             Log.i("Socket", "read_chat Called")
         }
     }
+
     fun re_order(jsonObject: JSONObject?) {
         if (jsonObject != null) {
             try {
@@ -293,8 +288,8 @@ class SocketManager {
             ex.localizedMessage
         }
     }
-    fun readMessageListener() {
 
+    fun readMessageListener() {
         try {
             if (!mSocket!!.connected()) {
                 mSocket!!.connect()
@@ -303,18 +298,14 @@ class SocketManager {
             } else {
                 mSocket!!.off(read_chat)
                 mSocket!!.on(read_chat, onReadMessageListener)
-
             }
-
         } catch (ex: Exception) {
-
             ex.localizedMessage
-
         }
 
         Log.i("Socket", "readMessageListener Called")
-
     }
+
     val onReadMessageListener = Emitter.Listener { args ->
         try {
             val data = args[0] as JSONObject
@@ -325,13 +316,15 @@ class SocketManager {
                 observer.onResponse(read_chat, data)
             }
 
-
         } catch (ex: Exception) {
             ex.localizedMessage
         }
     }
-    fun reOrderListener() {
 
+
+
+
+    fun reOrderListener() {
         try {
             if (!mSocket!!.connected()) {
                 mSocket!!.connect()
@@ -340,18 +333,15 @@ class SocketManager {
             } else {
                 mSocket!!.off(re_order)
                 mSocket!!.on(re_order, onReOrderListener)
-
             }
 
         } catch (ex: Exception) {
-
             ex.localizedMessage
-
         }
 
         Log.i("Socket", "readMessageListener Called")
-
     }
+
     val onReOrderListener = Emitter.Listener { args ->
         try {
             val data = args[0] as JSONObject
@@ -362,13 +352,12 @@ class SocketManager {
                 observer.onResponse(re_order, data)
             }
 
-
         } catch (ex: Exception) {
             ex.localizedMessage
         }
     }
-    fun driverStatusChange(jsonObject: JSONObject?) {
 
+    fun driverStatusChange(jsonObject: JSONObject?) {
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -392,26 +381,21 @@ class SocketManager {
             Log.i("Socket", "driver_change_status Called")
         }
     }
+
     fun driverStatusChangeListener() {
+        try {
+            if (!mSocket!!.connected()) {
+                mSocket!!.connect()
+                mSocket!!.off(driver_change_status)
+                mSocket!!.on(driver_change_status, onChangeDriverStatusListener)
 
-            try {
-                if (!mSocket!!.connected()) {
-                    mSocket!!.connect()
-                    mSocket!!.off(driver_change_status)
-                    mSocket!!.on(driver_change_status, onChangeDriverStatusListener)
-
-
-                } else {
-                    mSocket!!.off(driver_change_status)
-                    mSocket!!.on(driver_change_status, onChangeDriverStatusListener)
-
-
-                }
-            } catch (ex: Exception) {
-                ex.localizedMessage
+            } else {
+                mSocket!!.off(driver_change_status)
+                mSocket!!.on(driver_change_status, onChangeDriverStatusListener)
             }
-
-
+        } catch (ex: Exception) {
+            ex.localizedMessage
+        }
     }
 
     private val onChangeDriverStatusListener = Emitter.Listener { args ->
@@ -430,7 +414,6 @@ class SocketManager {
     }
 
     fun updateLocation(jsonObject: JSONObject?) {
-
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -470,9 +453,7 @@ class SocketManager {
         }
     }
 
-
     fun acceptReject(jsonObject: JSONObject?) {
-
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -494,27 +475,22 @@ class SocketManager {
             Log.i("Socket", "acceptReject Called")
         }
     }
+
     fun acceptRejectListener() {
+        try {
+            if (!mSocket!!.connected()) {
+                mSocket!!.connect()
+                mSocket!!.off(driver_accept_reject)
+                mSocket!!.on(driver_accept_reject, onAcceptRejectListener)
 
-            try {
-                if (!mSocket!!.connected()) {
-                    mSocket!!.connect()
-                    mSocket!!.off(driver_accept_reject)
-                    mSocket!!.on(driver_accept_reject, onAcceptRejectListener)
-
-
-                } else {
-                    mSocket!!.off(driver_accept_reject)
-                    mSocket!!.on(driver_accept_reject, onAcceptRejectListener)
-
-
-                }
-            } catch (ex: Exception) {
-                ex.localizedMessage
+            } else {
+                mSocket!!.off(driver_accept_reject)
+                mSocket!!.on(driver_accept_reject, onAcceptRejectListener)
             }
-
+        } catch (ex: Exception) {
+            ex.localizedMessage
         }
-
+    }
 
     private val onAcceptRejectListener = Emitter.Listener { args ->
         try {
@@ -524,10 +500,11 @@ class SocketManager {
             Log.e("Socket", "onAcceptRejectListener :::$data")
             // Check if data is empty
             val isEmpty = data.length() == 0
-            if (!isEmpty){
-            for (observer in observerList!!) {
-                observer.onResponse(driver_accept_reject, data)
-            }}
+            if (!isEmpty) {
+                for (observer in observerList!!) {
+                    observer.onResponse(driver_accept_reject, data)
+                }
+            }
 
         } catch (ex: Exception) {
             ex.localizedMessage
@@ -535,7 +512,6 @@ class SocketManager {
     }
 
     fun getMessageListner() {
-
         try {
             if (!mSocket!!.connected()) {
                 mSocket!!.connect()
@@ -544,21 +520,16 @@ class SocketManager {
             } else {
                 mSocket!!.off(send_message)
                 mSocket!!.on(send_message, onSendMessagesListener)
-
             }
 
         } catch (ex: Exception) {
-
             ex.localizedMessage
-
         }
 
         Log.i("Socket", "get Message Called")
-
     }
 
     fun getOrderListener() {
-
         try {
             if (!mSocket!!.connected()) {
                 mSocket!!.connect()
@@ -567,29 +538,38 @@ class SocketManager {
             } else {
                 mSocket!!.off(add_order)
                 mSocket!!.on(add_order, onNewOrderListener)
-
             }
 
         } catch (ex: Exception) {
-
             ex.localizedMessage
-
         }
 
         Log.i("Socket", "get Message Called")
-
     }
+
     fun onaddorderListener() {
         try {
+            Log.e("SocketManager", "📡 onaddorderListener() APPELÉ")
+
             if (!mSocket!!.connected()) {
+                Log.e("SocketManager", "⚠️ Socket pas connecté, connexion...")
                 mSocket!!.connect()
+            } else {
+                Log.e("SocketManager", "✅ Socket déjà connecté")
             }
+
             mSocket!!.off(add_order_listner, addOrderListener)
+            Log.e("SocketManager", "🔄 Ancien listener supprimé")
+
             mSocket!!.on(add_order_listner, addOrderListener)
+            Log.e("SocketManager", "✅ Nouveau listener enregistré pour: $add_order_listner")
+
         } catch (ex: Exception) {
-            ex.localizedMessage
+            Log.e("SocketManager", "❌ ERREUR: ${ex.localizedMessage}")
+            ex.printStackTrace()
         }
     }
+
     val onSendMessagesListener = Emitter.Listener { args ->
         try {
             val data = args[0] as JSONObject
@@ -614,6 +594,7 @@ class SocketManager {
             ex.localizedMessage
         }
     }
+
     val onNewOrderListener = Emitter.Listener { args ->
         try {
             Log.e("SocketjsonObject", args.toString())
@@ -623,7 +604,6 @@ class SocketManager {
 
             for (observer in observerList!!) {
                 observer.onResponse(add_order, data)
-
             }
 
         } catch (ex: Exception) {
@@ -648,33 +628,27 @@ class SocketManager {
             Log.i("Socket", "send_message Called")
         }
     }
-    fun addOrderSocket(jsonObject: JSONObject?) {
 
+
+
+    fun addOrderSocket(jsonObject: JSONObject?) {
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
                     mSocket!!.connect()
-                    mSocket!!.off(add_order_listner)
-                    mSocket!!.on(add_order_listner, addOrderListener)
-                    mSocket!!.emit(add_order_emitter, jsonObject)
-                    Log.e("jsonObjects: ", jsonObject.toString())
-
-                } else {
-                    mSocket!!.off(add_order_listner)
-                    mSocket!!.on(add_order_listner, addOrderListener)
-                    mSocket!!.emit(add_order_emitter, jsonObject)
-                    Log.e("jsonObjects----: ", jsonObject.toString())
-
                 }
+                // ✅ NE PAS faire off/on ici, déjà géré dans onaddorderListener()
+                mSocket!!.emit(add_order_emitter, jsonObject)
+                Log.e("jsonObjects", jsonObject.toString())
+
             } catch (ex: Exception) {
                 ex.localizedMessage
             }
-
-            Log.i("Socket", "update_location Called")
+            Log.i("Socket", "addOrderSocket Called")
         }
     }
-    fun cancelOrderSocket(jsonObject: JSONObject?) {
 
+    fun cancelOrderSocket(jsonObject: JSONObject?) {
         if (jsonObject != null) {
             try {
                 if (!mSocket!!.connected()) {
@@ -715,18 +689,27 @@ class SocketManager {
     }
     private val addOrderListener = Emitter.Listener { args ->
         try {
-            Log.e("TAG", "add_order_listner" + args)
+            Log.e("SocketManager", "📥 📥 📥 EVENT REÇU: add_order_listner")
+            Log.e("SocketManager", "📦 Args: $args")
 
             val data = args[0] as JSONObject
-            Log.e("Socket", "add_order_listner :::$data")
+            Log.e("SocketManager", "📦 Data JSON: $data")
+
+            Log.e("SocketManager", "👥 Nombre d'observers: ${observerList?.size}")
+
             for (observer in observerList!!) {
+                Log.e("SocketManager", "📢 Envoi à observer: ${observer.javaClass.simpleName}")
                 observer.onResponse(add_order_listner, data)
             }
 
+            Log.e("SocketManager", "✅ Event traité avec succès")
+
         } catch (ex: Exception) {
-            ex.localizedMessage
+            Log.e("SocketManager", "❌ ERREUR dans addOrderListener: ${ex.localizedMessage}")
+            ex.printStackTrace()
         }
     }
+
     private val onErrorMessage = Emitter.Listener { args ->
         for (observer in observerList!!) {
             try {

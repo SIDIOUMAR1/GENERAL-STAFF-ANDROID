@@ -246,5 +246,13 @@
     <string name="send_user_location_to_driver">Send user location to driver</string>
     <string name="send_shop_location_to_driver">Send restaurant location to driver</string>
     <string name="at_least_one_location_required">At least one location (user or restaurant) must be sent to the driver</string>
-
+    <string name="order_summary_audio">Order Summary (Audio)</string>
+    <string name="shop_location_audio">Voice message for restaurant location</string>
+    <string name="share_with_client">Share with client</string>
+    <string name="conversation_shared">Conversation shared successfully</string>
+    <string name="already_shared">Already shared with client</string>
+    <string name="assign_directly_to_driver">Assign directly to a driver</string>
+    <string name="select_driver">Select a driver</string>
+    <string name="search_driver_by_name_or_phone">Search by name or phone number</string>
+    <string name="no_available_drivers">No available drivers</string>
 </resources>

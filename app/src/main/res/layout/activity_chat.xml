@@ -6,6 +6,8 @@
     android:layout_height="match_parent"
     tools:context=".home.ui.ChatActivity">
 
+    <!-- ─── HEADER ─────────────────────────────────────────────── -->
+
     <ImageView
         android:id="@+id/ivBack"
         android:layout_width="@dimen/_30sdp"
@@ -39,7 +41,6 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/_5sdp"
         android:ellipsize="end"
-
         android:fontFamily="@font/poppins_regular"
         android:maxLines="1"
         android:includeFontPadding="false"
@@ -48,6 +49,7 @@
         app:layout_constraintEnd_toStartOf="@id/llButtons"
         app:layout_constraintStart_toEndOf="@id/ivBack"
         app:layout_constraintTop_toBottomOf="@+id/tvName" />
+
     <LinearLayout
         android:id="@+id/llButtons"
         android:layout_width="wrap_content"
@@ -65,7 +67,6 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="@dimen/_5sdp"
             android:src="@drawable/whats_up_icon" />
-
 
         <ImageView
             android:id="@+id/ivCall"
@@ -100,9 +101,34 @@
         android:textColor="@color/app_theme_color"
         android:textSize="@dimen/_12sdp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/llButtons"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/tvDistance" />
 
+    <!-- ─── ✅ BOUTON PARTAGER INFO UTILISATEUR ──────────────────
+         Visible uniquement quand on chat avec un DRIVER (userType == "2")
+         Positionné entre l'en-tête et la liste de messages           -->
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnShareUserInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/_32sdp"
+        android:layout_marginEnd="@dimen/_10sdp"
+        android:layout_marginTop="@dimen/_4sdp"
+        android:layout_marginBottom="@dimen/_4sdp"
+        android:background="@color/app_theme_color"
+        android:drawableStart="@drawable/ic_share"
+        android:drawablePadding="@dimen/_4sdp"
+        android:fontFamily="@font/poppins_medium"
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:text="Partager info utilisateur"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_10sdp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvOrder" />
+
+    <!-- ─── LISTE MESSAGES ──────────────────────────────────────── -->
+    <!-- ⚠️ CHANGEMENT : constraintTop passe de tvOrder → btnShareUserInfo -->
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvChat"
@@ -113,13 +139,14 @@
         app:layout_constraintBottom_toTopOf="@+id/rlSend"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvOrder" />
+        app:layout_constraintTop_toBottomOf="@+id/btnShareUserInfo" />
+
+    <!-- ─── AUCUN MESSAGE ───────────────────────────────────────── -->
 
     <TextView
         android:id="@+id/tvNoDataFound"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:fontFamily="@font/poppins_semibold"
         android:text="@string/no_chat_yet"
         android:textColor="@color/black"
@@ -134,15 +161,12 @@
         android:id="@+id/llNoNewRequest"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-
-        >
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:layout_width="@dimen/_100sdp"
@@ -158,6 +182,8 @@
             android:textColor="@color/black"
             android:textSize="@dimen/_12sdp" />
     </LinearLayout>
+
+    <!-- ─── ZONE DE SAISIE ──────────────────────────────────────── -->
 
     <RelativeLayout
         android:id="@+id/rlSend"
@@ -175,7 +201,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="visible">
-
 
             <EditText
                 android:id="@+id/edSearch"
@@ -264,7 +289,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:src="@drawable/audiogif" />
-
 
             <ImageView
                 android:id="@+id/ivCheck"

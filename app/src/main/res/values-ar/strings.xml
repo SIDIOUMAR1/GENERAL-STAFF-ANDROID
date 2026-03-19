@@ -245,5 +245,13 @@
     <string name="send_user_location_to_driver">إرسال موقع المستخدم إلى السائق</string>
     <string name="send_shop_location_to_driver">إرسال موقع المطعم إلى السائق</string>
     <string name="at_least_one_location_required">يجب إرسال موقع واحد على الأقل (المستخدم أو المطعم) إلى السائق</string>
-
+    <string name="order_summary_audio">ملخص الطلب (صوتي)</string>
+    <string name="shop_location_audio">رسالة صوتية لموقع المطعم</string>
+    <string name="share_with_client">مشاركة مع العميل</string>
+    <string name="conversation_shared">تم مشاركة المحادثة بنجاح</string>
+    <string name="already_shared">تمت المشاركة بالفعل مع العميل</string>
+    <string name="assign_directly_to_driver">تعيين مباشرة لسائق</string>
+    <string name="select_driver">اختر سائقاً</string>
+    <string name="search_driver_by_name_or_phone">ابحث بالاسم أو رقم الهاتف</string>
+    <string name="no_available_drivers">لا يوجد سائقون متاحون</string>
 </resources>

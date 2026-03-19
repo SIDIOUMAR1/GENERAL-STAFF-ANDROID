@@ -1,7 +1,6 @@
 package com.genralstaff.home.ui
 
 import android.Manifest
-import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.ContextWrapper
@@ -24,10 +23,10 @@ import android.view.WindowManager
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.genralstaff.R
 import com.genralstaff.adapter.ChatAdapter
@@ -37,22 +36,18 @@ import com.genralstaff.network.ErrorType
 import com.genralstaff.responseModel.GetChatMessagesResponse
 import com.genralstaff.sockets.SocketManager
 import com.genralstaff.utils.CustomProgressDialog
-import com.genralstaff.utils.GoogleMapsAPI
 import com.genralstaff.utils.ImagePickerActivityUtility
 import com.genralstaff.utils.MyApplication
 import com.genralstaff.utils.MyApplication.Companion.prefs
 import com.genralstaff.utils.RecordAudioActivity
 import com.genralstaff.utils.Utils
-import com.genralstaff.utils.getDistanceTo
 import com.genralstaff.utils.hideKeyboard
 import com.genralstaff.utils.makePhoneCall
 import com.genralstaff.utils.prepareFilePart
 import com.genralstaff.utils.sessionExpire
 import com.genralstaff.viewmodel.AuthViewModel
-import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-
 import com.rygelouv.audiosensei.player.AudioSenseiListObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +78,9 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     private var phoneNumber = ""
     private var room_id = ""
 
+    // ✅ NOUVELLES VARIABLES : audio et localisation utilisateur
+    private var audioUserLocation = ""   // vocal emplacement utilisateur (1er vocal)
+    private var userInfoAlreadyShared = false  // évite double envoi accidentel
 
     var startRecording = false
     var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
@@ -95,6 +93,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     var random: Random? = null
     private val activityScope = CoroutineScope(Dispatchers.Main)
     private lateinit var authViewModel: AuthViewModel
+
     override fun selectedImage(imagePath: String?, code: Int?) {
         type = "2"
         val imagePart: MultipartBody.Part =
@@ -107,20 +106,19 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-//         Register lifecycle to the AudioSenseiListObserver
         AudioSenseiListObserver.getInstance().registerLifecycle(this@ChatActivity.lifecycle)
         checkPermission()
         initializeViews()
         initializeSockets()
         setupListeners()
-//        fetchChatList()
         progressDialog.show(this)
         displayChatMessages()
 
         viewModelSetupAndResponse()
-        random = Random()
-        binding.ivMic!!.setOnClickListener {
 
+        random = Random()
+
+        binding.ivMic!!.setOnClickListener {
             binding.rlRecordView.visibility = View.VISIBLE
             binding.rlChatView.visibility = View.GONE
             Glide.with(this)
@@ -128,9 +126,10 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 .into(binding.ivGif!!)
             startResording()
         }
+
         binding.ivCheck!!.setOnClickListener {
             Glide.with(this).clear(binding.ivGif!!)
-            binding.ivGif!!.setImageDrawable(null) // Optionally clear the ImageView content
+            binding.ivGif!!.setImageDrawable(null)
 
             binding.rlRecordView.visibility = View.GONE
             binding.rlChatView.visibility = View.VISIBLE
@@ -153,21 +152,19 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
 
         binding.ivCross.setOnClickListener {
             Glide.with(this).clear(binding.ivGif!!)
-            binding.ivGif!!.setImageDrawable(null) // Optionally clear the ImageView content
+            binding.ivGif!!.setImageDrawable(null)
             binding.rlRecordView.visibility = View.GONE
             binding.rlChatView.visibility = View.VISIBLE
             if (mediaRecorder != null) {
                 mediaRecorder!!.stop()
-
             }
             startRecording = false
             countDownTimer!!.cancel()
             startRecording = false
             binding.timer!!.text = "00:00"
-
         }
-        binding.ivBack.setOnClickListener { finish() }
 
+        binding.ivBack.setOnClickListener { finish() }
     }
 
     private fun initializeViews() {
@@ -185,15 +182,16 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         otherUserName = intent.getStringExtra("otherUserName").toString()
         otherUserImage = intent.getStringExtra("otherUserImage").toString()
         shopName = intent.getStringExtra("shopName") ?: ""
-        Log.e("initializeViews: ", shopName)
+
+        Log.e("initializeViews", "shopName: $shopName")
+        Log.e("initializeViews", "userType: $userType")
+
         if (shopName == "null") {
             binding.tvName.text = "$otherUserName"
         } else {
             binding.tvName.text = "$otherUserName-$shopName"
-
-//
-
         }
+
         binding.tvOrder.setOnClickListener {
             startActivity(
                 Intent(this, OrderHistoryActivity::class.java)
@@ -201,20 +199,24 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     .putExtra("userId", otherUserId.toString())
             )
         }
+
         if (userType == "2") {
-            // driver
             binding.ivWhatsApp.visibility = View.GONE
             binding.ivCall.visibility = View.GONE
             binding.tvDistance.visibility = View.INVISIBLE
             binding.tvOrder.visibility = View.INVISIBLE
             binding.ivBoost.visibility = View.GONE
-        } else {
-            // user
+            binding.btnShareUserInfo.visibility = View.VISIBLE  // ✅ toujours visible
+        }else {
+            // ── Chat avec un UTILISATEUR ──────────────────────────────
             binding.ivWhatsApp.visibility = View.VISIBLE
             binding.tvOrder.visibility = View.VISIBLE
             binding.tvDistance.visibility = View.VISIBLE
             binding.ivCall.visibility = View.VISIBLE
             binding.ivBoost.visibility = View.VISIBLE
+
+            // ✅ Cacher le bouton pour les conversations utilisateur
+            binding.btnShareUserInfo.visibility = View.GONE
         }
 
         binding.ivBoost.setOnClickListener {
@@ -222,8 +224,6 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             map["user_id"] = otherUserId
             map["shop_id"] = shopId
             authViewModel.checkOrder(map)
-
-
         }
     }
 
@@ -234,7 +234,8 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         socketManager.getMessageListner()
         socketManager.readMessageListener()
 
-
+        Log.e("SocketTest", "=== TEST CONNEXION ===")
+        Log.e("SocketTest", "Socket connecté? ${socketManager.isConnected()}")
     }
 
     companion object {
@@ -242,59 +243,44 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     }
 
     private fun openWhatsApps(phone: String) {
-
         val intent = Intent(Intent.ACTION_VIEW)
-        intent.data =
-            Uri.parse("http://api.whatsapp.com/send?phone=$phone")
+        intent.data = Uri.parse("http://api.whatsapp.com/send?phone=$phone")
         startActivity(intent)
-
     }
 
     private fun contactDialog(s: String) {
-        // Create a dialog and set the content view
         val dialog = Dialog(this)
         val binding: CantactUserShopBinding =
-            CantactUserShopBinding.inflate(layoutInflater) // Use the generated binding class
+            CantactUserShopBinding.inflate(layoutInflater)
         dialog.setContentView(binding.root)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        // Set window properties
         val window = dialog.window
         window?.setGravity(Gravity.BOTTOM)
         window?.setLayout(
             RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT
         )
 
-        // Use binding to access views
         binding.tvContactUser.setOnClickListener {
             if (s == "call") {
                 makePhoneCall(phoneNumber, this@ChatActivity)
-
             } else {
                 openWhatsApps(phoneNumber)
-
             }
-
-
         }
-        // Use binding to access views
+
         binding.tvContactShop.setOnClickListener {
             if (s == "call") {
                 makePhoneCall(shopPhone, this@ChatActivity)
-
             } else {
                 openWhatsApps(shopPhone)
-
             }
-
         }
 
-        // Set the cancel button click listener
         binding.tvCancel.setOnClickListener {
             dialog.dismiss()
         }
 
-        // Show the dialog
         dialog.show()
     }
 
@@ -302,32 +288,25 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         binding.ivImage.setOnClickListener {
             getImage(this, 0)
         }
+
         binding.ivWhatsApp.setOnClickListener {
             if (intent.getStringExtra("shopPhone") == null) {
                 openWhatsApps(phoneNumber)
-
             } else {
-
                 contactDialog("whatsApp")
             }
         }
+
         binding.ivCall.setOnClickListener {
             if (intent.getStringExtra("shopPhone") == null) {
                 makePhoneCall(phoneNumber, this)
-
             } else {
                 contactDialog("call")
             }
         }
-//        binding.ivMic.setOnClickListener {
-//            val intent = Intent(this, RecordAudioActivity::class.java)
-//            startActivityForResult(intent, RequestPermissionCode)
-//        }
+
         binding.ivSend.setOnClickListener {
-
             when {
-
-
                 binding.edSearch.text.toString().trim().isEmpty() -> {
                     Toast.makeText(
                         applicationContext.applicationContext,
@@ -343,10 +322,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                         val jsonObject = JSONObject()
                         jsonObject.put("message", binding.edSearch.text.toString().trim())
                         jsonObject.put("receiver_id", otherUserId.toInt())
-                        jsonObject.put(
-                            "message_type",
-                            type.toInt()
-                        )  //1- simple message,2,image,3 audio
+                        jsonObject.put("message_type", type.toInt())
                         jsonObject.put("sender_id", userId?.toInt())
                         if (shopId.isNotEmpty()) {
                             jsonObject.put("shop_id", shopId.toInt())
@@ -360,8 +336,96 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             }
         }
 
+        // ✅ BOUTON "PARTAGER INFO UTILISATEUR"
+        binding.btnShareUserInfo.setOnClickListener {
+            showShareUserInfoConfirmDialog()
+        }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // ✅ DIALOGUE DE CONFIRMATION avant d'envoyer les infos
+    // ─────────────────────────────────────────────────────────────────────────
+    private fun showShareUserInfoConfirmDialog() {
+        // ✅ Si déjà partagé → juste informer
+        if (userInfoAlreadyShared) {
+            Utils.showToast(this, "✅ Infos utilisateur déjà partagées avec le driver")
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Partager info utilisateur")
+            .setMessage("Confirmer l'envoi de la localisation et du vocal de l'utilisateur au driver ?")
+            .setPositiveButton("Envoyer") { dialog, _ ->
+                dialog.dismiss()
+                shareUserInfo()
+            }
+            .setNegativeButton("Annuler") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ✅ LOGIQUE PRINCIPALE : envoie le lien Maps + le vocal utilisateur
+    // ─────────────────────────────────────────────────────────────────────────
+    private fun shareUserInfo() {
+        if (!Utils.internetAvailability(this)) {
+            Utils.showToast(this, getString(R.string.no_internet_connection))
+            return
+        }
+        Log.e("ShareUserInfo", "=== DEBUG SHARE ===")
+        Log.e("ShareUserInfo", "user_latitude: $user_latitude")
+        Log.e("ShareUserInfo", "user_longitude: $user_longitude")
+        Log.e("ShareUserInfo", "audioUserLocation: $audioUserLocation")
+        Log.e("ShareUserInfo", "===================")
+
+        // Vérifier que la localisation utilisateur est disponible
+        val hasLocation = user_latitude.isNotEmpty()
+                && user_latitude != "null"
+                && user_longitude.isNotEmpty()
+                && user_longitude != "null"
+
+        val hasAudio = audioUserLocation.isNotEmpty()
+
+        if (!hasLocation && !hasAudio) {
+            Utils.showToast(this, "Aucune info utilisateur disponible")
+            return
+        }
+
+        val userId = prefs?.getString("userId")
+
+        // ── 1. Envoyer le lien Google Maps de l'utilisateur ──────────
+        if (hasLocation) {
+            val mapsLink = "https://www.google.com/maps?q=$user_latitude,$user_longitude"
+            val jsonLocation = JSONObject().apply {
+                put("message", "📍 Localisation utilisateur : $mapsLink")
+                put("receiver_id", otherUserId.toInt())
+                put("message_type", 1)   // type texte
+                put("sender_id", userId?.toInt())
+                if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
+            }
+            socketManager.send_message(jsonLocation)
+            Log.e("ShareUserInfo", "✅ Lien Maps envoyé : $mapsLink")
+        }
+
+        // ── 2. Envoyer le vocal de l'emplacement utilisateur ─────────
+        if (hasAudio) {
+            val jsonAudio = JSONObject().apply {
+                put("message", audioUserLocation)   // URL relative déjà uploadée
+                put("receiver_id", otherUserId.toInt())
+                put("message_type", 3)   // type audio
+                put("sender_id", userId?.toInt())
+                if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
+            }
+            socketManager.send_message(jsonAudio)
+            Log.e("ShareUserInfo", "✅ Vocal utilisateur envoyé : $audioUserLocation")
+        }
+
+        // ── 3. Masquer le bouton après l'envoi ───────────────────────
+        userInfoAlreadyShared = true
+        Utils.showToast(this, "✅ Infos utilisateur partagées avec le driver")
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     private fun fetchChatList() {
         if (Utils.internetAvailability(this)) {
@@ -375,7 +439,6 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 }
             }
             Log.e("jsonObjects: ", jsonObjects.toString())
-
             socketManager.getChatList(jsonObjects)
         } else {
             Utils.showToast(this, getString(R.string.no_internet_connection))
@@ -403,23 +466,15 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 binding.llNoNewRequest.visibility = View.VISIBLE
             } else {
                 room_id = list[0].room_id.toString()
-// Get the sender ID for the last item in the list
-                val lastItem =
-                    list.lastOrNull()  // This safely gets the last item or null if the list is empty
 
-// Ensure lastItem is not null before proceeding
+                val lastItem = list.lastOrNull()
                 if (lastItem != null) {
-                    val lastSenderID = lastItem.sender_id?.toString()
-                        ?: ""  // Convert last sender ID to string and handle null
-
-                    // Check if otherUserId matches the sender ID of the last item
+                    val lastSenderID = lastItem.sender_id?.toString() ?: ""
                     if (prefs?.getString("userId")?.toInt() != lastSenderID.toInt()) {
-                        callReadMessageSocket()  // Call the function if sender IDs match
+                        callReadMessageSocket()
                     }
-                } else {
-                    // Handle the case when the list is empty or lastItem is null
-                    Log.e("ListError", "List is empty or lastItem is null")
                 }
+
                 binding.rvChat.visibility = View.VISIBLE
                 binding.llNoNewRequest.visibility = View.GONE
                 list.reverse()
@@ -430,7 +485,6 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 }
             }
 
-
             progressDialog.hide()
         }
     }
@@ -438,10 +492,8 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     private lateinit var messageAdapter: ChatAdapter
 
     private fun displayChatMessages() {
-
         messageAdapter = ChatAdapter(this, list, otherUserImage)
         binding.rvChat.adapter = messageAdapter
-
     }
 
     var user_latitude = ""
@@ -449,23 +501,45 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     var latitudeShop = ""
     var longitudeShop = ""
     private var list = ArrayList<GetChatMessagesResponse.Message>()
+
     private fun handleChatListObjectResponse(args: JSONObject) {
         activityScope.launch {
             val gson = GsonBuilder().create()
             val response = gson.fromJson(args.toString(), GetChatMessagesResponse::class.java)
-//            val formattedDistance = String.format(Locale.US, "%.1f Km", response.room.distance)
-            user_latitude = response.room.user_latitude ?: ""
-            user_longitude = response.room.user_longitude ?: ""
-            latitudeShop = response.room.shop_latitude ?: ""
-            longitudeShop = response.room.shop_longitude ?: ""
-            val formattedDistance = response.room.distance?.toDoubleOrNull()?.let {
-                getString(R.string.approx)+ " "+ String.format(Locale.US, "%.1f Km", it)
-            } ?: ""
 
+            // ── Extraire les données du ROOM ─────────────────────────
+            response.room?.let { room ->
+                user_latitude = room.user_latitude ?: ""
+                user_longitude = room.user_longitude ?: ""
+                latitudeShop = room.shop_latitude ?: ""
+                longitudeShop = room.shop_longitude ?: ""
 
-            binding.tvDistance.text=  formattedDistance
+                Log.e("ChatActivity", "=== DEBUG ROOM ===")
+                Log.e("ChatActivity", "order_id: ${room.order_id}")
+                Log.e("ChatActivity", "audio_user_location: ${room.audio_user_location}")
+                Log.e("ChatActivity", "user_latitude: ${room.user_latitude}")
+                Log.e("ChatActivity", "==================")
+
+                val formattedDistance = room.distance?.toDoubleOrNull()?.let {
+                    getString(R.string.approx) + " " + String.format(Locale.US, "%.1f Km", it)
+                } ?: ""
+                binding.tvDistance.text = formattedDistance
+
+                // ✅ Récupérer le vocal utilisateur depuis le room
+                audioUserLocation = room.audio_user_location ?: ""
+                Log.e("ChatActivity", "audioUserLocation récupéré : $audioUserLocation")
+
+                // ✅ Si le bouton est déjà affiché et qu'on n'a pas encore partagé,
+                //    mettre à jour sa visibilité selon la disponibilité des données
+                if (userType == "2") {
+                    binding.btnShareUserInfo.visibility = View.VISIBLE
+                }
+            }
+
+            // ── Extraire la liste des messages ───────────────────────
+            val responseList = response.list ?: ArrayList()
             list.clear()
-            list.addAll(response.list)
+            list.addAll(responseList)
 
             if (list.isEmpty()) {
                 binding.rvChat.visibility = View.GONE
@@ -485,7 +559,6 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 binding.llNoNewRequest.visibility = View.GONE
                 list.reverse()
                 messageAdapter.updateList(list)
-
                 binding.rvChat.scrollToPosition(list.size - 1)
             }
 
@@ -494,19 +567,16 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     }
 
     override fun onResponse(event: String, args: JSONObject) {
-        // Handle individual JSON object responses if needed
-
         when (event) {
             SocketManager.get_message_list -> handleChatListObjectResponse(args)
 
             SocketManager.send_message -> {
                 activityScope.launch {
                     progressDialog.hide()
-                    val response =
-                        Gson().fromJson(
-                            args.toString(),
-                            GetChatMessagesResponse.Message::class.java
-                        )
+                    val response = Gson().fromJson(
+                        args.toString(),
+                        GetChatMessagesResponse.Message::class.java
+                    )
                     val senderID = response.sender_id
 
                     if (otherUserId.toInt() == senderID) {
@@ -522,53 +592,23 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                         } else {
                             binding.rvChat.visibility = View.VISIBLE
                             binding.llNoNewRequest.visibility = View.GONE
-
                         }
-
-                        // Notify only the newly added item
                         messageAdapter.notifyItemInserted(list.size - 1)
-
-                        // Scroll to the latest message
                         binding.rvChat.scrollToPosition(list.size - 1)
-
-//                        if (list.isNullOrEmpty() || list.size == 0) {
-//                            binding.rvChat.visibility = View.GONE
-//                            binding.llNoNewRequest.visibility = View.VISIBLE
-//                        } else {
-//                            binding.rvChat.visibility = View.VISIBLE
-//                            binding.llNoNewRequest.visibility = View.GONE
-////                            list.reverse()
-//                            messageAdapter.updateList(list)
-//
-//                            if (list.size > 0) {
-//                                binding.rvChat.scrollToPosition(list.size - 1)
-//                            }
-//                        }
-
                     }
-
                 }
             }
 
             SocketManager.read_chat -> {
                 activityScope.launch {
-                    //mark as read all the messages
-                    list.forEach {
-                        it.is_read = 1
-                    }
-
+                    list.forEach { it.is_read = 1 }
                     messageAdapter.updateList(list)
-
-
                 }
             }
-
         }
-
     }
 
     private fun callReadMessageSocket() {
-        //mark as read all the messages
         val jsonObject = JSONObject().apply {
             put("room_id", room_id)
             put("sender_id", prefs?.getString("userId").toString())
@@ -594,37 +634,28 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         prefs?.saveString("STATUS_CHAT", "false")
     }
 
-    override fun onError(event: String, vararg args: Array<*>) {
-        // Handle errors
-    }
-
-    override fun onBlockError(event: String, args: String) {
-        // Handle block errors
-    }
+    override fun onError(event: String, vararg args: Array<*>) {}
+    override fun onBlockError(event: String, args: String) {}
 
     private fun viewModelSetupAndResponse() {
-
         authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
         authViewModel.getError().observe(this) {
             Utils.showToast(this, it)
         }
+
         authViewModel.progressDialogData().observe(this) { isShowProgress ->
-            if (isShowProgress) {
-                progressDialog.show(this)
-            } else {
-                progressDialog.hide()
-            }
+            if (isShowProgress) progressDialog.show(this)
+            else progressDialog.hide()
         }
+
         authViewModel.onShowErrorCode().observe(this) {
             when (it) {
-                ErrorType.UNAUTHORIZED -> {
-                    sessionExpire()
-                }
-
+                ErrorType.UNAUTHORIZED -> sessionExpire()
                 else -> {}
             }
         }
+
         authViewModel.onUploadProfileResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
@@ -632,19 +663,14 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     val jsonObject = JSONObject()
                     jsonObject.put("message", it.body.media.toString())
                     jsonObject.put("receiver_id", otherUserId.toInt())
-                    jsonObject.put(
-                        "message_type",
-                        type.toInt()
-                    )  //1- simple message,2,image,3 audio
+                    jsonObject.put("message_type", type.toInt())
                     jsonObject.put("sender_id", userId?.toInt())
-                    if (shopId.isNotEmpty()) {
-                        jsonObject.put("shop_id", shopId.toInt())
-                    }
+                    if (shopId.isNotEmpty()) jsonObject.put("shop_id", shopId.toInt())
                     socketManager.send_message(jsonObject)
-
                 }
             }
         }
+
         authViewModel.onCheckOrderResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
@@ -676,13 +702,10 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 Log.e("fileUrlSong", recordingFilePath.toString())
                 val file: File = File(recordingFilePath)
                 if (file.exists()) {
-
                     val audioPath = recordingFilePath!!
                     type = "3"
-                    val imagePart: MultipartBody.Part =
-                        prepareFilePart("media", File(audioPath))
+                    val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
                     authViewModel.uploadFiles(imagePart)
-
                 }
             } catch (e: java.lang.Exception) {
                 e.printStackTrace()
@@ -693,18 +716,13 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     private fun startResording() {
         if (!startRecording) {
             if (checkPermission()) {
-
                 var cw: ContextWrapper = ContextWrapper(applicationContext)
-                var directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
-
-
+                var directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//                    AudioSavePathInDevice = directory.absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.mp3"
                     AudioSavePathInDevice =
                         directory.absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.m4a"
                 } else {
-//                    AudioSavePathInDevice = Environment.getExternalStorageDirectory().absolutePath + "/" + CreateRandomAudioFileName(5) + "audioRecording.mp3"
                     AudioSavePathInDevice =
                         Environment.getExternalStorageDirectory().absolutePath + "/" + CreateRandomAudioFileName(
                             5
@@ -713,44 +731,36 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
 
                 mediaRecorderReady()
                 try {
-
                     startRecording = true
                     playStatus = "0"
-
                     mediaRecorder!!.prepare()
                     mediaRecorder!!.start()
 
-                    countDownTimer =
-                        object : CountDownTimer(300000, 1000) { // 300,000 milliseconds = 5 minutes
-                            override fun onTick(millisUntilFinished: Long) {
-                                elapsedTime =
-                                    300 - (millisUntilFinished / 1000) // Calculate elapsed time in seconds
-                                val minutes = elapsedTime / 60
-                                val seconds = elapsedTime % 60
-                                binding.timer!!.text =
-                                    String.format(Locale.US, "%02d:%02d", minutes, seconds)
-                            }
+                    countDownTimer = object : CountDownTimer(300000, 1000) {
+                        override fun onTick(millisUntilFinished: Long) {
+                            elapsedTime = 300 - (millisUntilFinished / 1000)
+                            val minutes = elapsedTime / 60
+                            val seconds = elapsedTime % 60
+                            binding.timer!!.text =
+                                String.format(Locale.US, "%02d:%02d", minutes, seconds)
+                        }
 
-                            override fun onFinish() {
-                                startRecording = false
-                                binding.timer!!.text = "05:00"
-                                if (mediaRecorder != null) {
-                                    mediaRecorder!!.stop()
-                                    val file: File = File(AudioSavePathInDevice!!)
-                                    if (file.exists()) {
-
-                                        val audioPath = AudioSavePathInDevice!!
-                                        type = "3"
-                                        val imagePart: MultipartBody.Part =
-                                            prepareFilePart("media", File(audioPath))
-                                        authViewModel.uploadFiles(imagePart)
-
-                                    }
+                        override fun onFinish() {
+                            startRecording = false
+                            binding.timer!!.text = "05:00"
+                            if (mediaRecorder != null) {
+                                mediaRecorder!!.stop()
+                                val file: File = File(AudioSavePathInDevice!!)
+                                if (file.exists()) {
+                                    val audioPath = AudioSavePathInDevice!!
+                                    type = "3"
+                                    val imagePart: MultipartBody.Part =
+                                        prepareFilePart("media", File(audioPath))
+                                    authViewModel.uploadFiles(imagePart)
                                 }
-
-
                             }
-                        }.start()
+                        }
+                    }.start()
                 } catch (e: IllegalStateException) {
                     e.printStackTrace()
                 } catch (e: IOException) {
@@ -766,25 +776,20 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         }
     }
 
-
     private fun mediaRecorderReady() {
         mediaRecorder = MediaRecorder()
         try {
             mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
             mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-
-            // Set higher quality parameters
-            mediaRecorder!!.setAudioEncodingBitRate(128000) // 128 kbps
-            mediaRecorder!!.setAudioSamplingRate(44100)     // CD quality
-
+            mediaRecorder!!.setAudioEncodingBitRate(128000)
+            mediaRecorder!!.setAudioSamplingRate(44100)
             mediaRecorder!!.setOutputFile(AudioSavePathInDevice)
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Error initializing recorder: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     fun CreateRandomAudioFileName(string: Int): String {
         val stringBuilder = StringBuilder(string)
@@ -797,16 +802,13 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     }
 
     private fun requestPermissions() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.requestPermissions(
                 this@ChatActivity,
                 arrayOf(Manifest.permission.RECORD_AUDIO),
                 RecordAudioActivity.RequestPermissionCode
             )
-
         } else {
-
             ActivityCompat.requestPermissions(
                 this@ChatActivity,
                 arrayOf(
@@ -816,32 +818,23 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 RecordAudioActivity.RequestPermissionCode
             )
         }
-
     }
 
-
     fun checkPermission(): Boolean {
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val result1 = ContextCompat.checkSelfPermission(
-                applicationContext,
-                Manifest.permission.RECORD_AUDIO
-            )
-            return result1 == PackageManager.PERMISSION_GRANTED
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                applicationContext, Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
         } else {
             val result = ContextCompat.checkSelfPermission(
-                applicationContext,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                applicationContext, Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
             val result1 = ContextCompat.checkSelfPermission(
-                applicationContext,
-                Manifest.permission.RECORD_AUDIO
+                applicationContext, Manifest.permission.RECORD_AUDIO
             )
-            return result == PackageManager.PERMISSION_GRANTED &&
+            result == PackageManager.PERMISSION_GRANTED &&
                     result1 == PackageManager.PERMISSION_GRANTED
-
         }
-
     }
 
     private fun checkOrder() {
@@ -855,16 +848,12 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         dialog.setCancelable(false)
         dialog.setCanceledOnTouchOutside(true)
         dialog.window!!.setGravity(Gravity.CENTER)
-//        dialog.window?.attributes?.windowAnimations = R.style.DialogAnimationPhone
-
         dialog.show()
 
         val tvYesL = dialog.findViewById<TextView>(R.id.btnYes)
         val tvNoL = dialog.findViewById<TextView>(R.id.btnNo)
 
-
         tvYesL.setOnClickListener {
-
             dialog.dismiss()
             startActivity(
                 Intent(this, AddOrderActivity::class.java)
@@ -877,9 +866,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     .putExtra("longitudeShop", longitudeShop)
             )
         }
-        tvNoL.setOnClickListener {
-            dialog.dismiss()
-        }
-    }
 
+        tvNoL.setOnClickListener { dialog.dismiss() }
+    }
 }
