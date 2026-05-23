@@ -97,18 +97,35 @@ public class MyFirebaseMessagingService : FirebaseMessagingService() {
             shop_id = objJson.getString("shop_id").toString()
             senderId = objJson.getInt("sender_id").toString()
             if (prefs?.getString("STATUS_CHAT") != "true$senderName") {
+                try {
+                    val mp = android.media.MediaPlayer.create(applicationContext, Settings.System.DEFAULT_NOTIFICATION_URI)
+                    mp?.setOnErrorListener { _, _, _ -> mp?.release(); true }
+                    mp?.start()
+                    mp?.setOnCompletionListener { it.release() }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Sound error: ${e.message}")
+                }
                 makePush()
-
             }
 
 //            message push
         } else {
             type = "0"
-
+            try {
+                val mp = android.media.MediaPlayer.create(applicationContext, Settings.System.DEFAULT_NOTIFICATION_URI)
+                mp?.setOnErrorListener { _, _, _ -> mp?.release(); true }
+                mp?.start()
+                mp?.setOnCompletionListener { it.release() }
+            } catch (e: Exception) {
+                Log.e(TAG, "Sound error: ${e.message}")
+            }
             makePush()
 
+
+
+
+
             sendBroadcastForScreenRefresh()
-//            new order push
         }
 
 
@@ -120,7 +137,7 @@ public class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun makePush() {
         // Create a unique request code for each notification
-        val uniqueId = System.currentTimeMillis().toInt()
+        val uniqueId = if (type == "1") 1001 else 1002
 
         intent = when (type) {
             "1" -> {
@@ -158,6 +175,13 @@ public class MyFirebaseMessagingService : FirebaseMessagingService() {
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val mChannel = NotificationChannel(channelId, channelName, importance)
             mChannel.enableVibration(true)
+            mChannel.setSound(
+                Settings.System.DEFAULT_NOTIFICATION_URI,
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
             mNotificationManager.createNotificationChannel(mChannel)
 
             val mBuilder = NotificationCompat.Builder(this, channelId)

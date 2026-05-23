@@ -289,5 +289,21 @@
         </LinearLayout>
     </ScrollView>
 
+    <!-- ✅ BOUTON FUSÉE - Lancer une commande manuelle -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNewOrder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:contentDescription="Nouvelle commande"
+        android:src="@drawable/ic_rocket"
+        app:backgroundTint="@color/app_theme_color"
+        app:fabSize="normal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:rippleColor="#80FFFFFF"
+        app:tint="@color/white" />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

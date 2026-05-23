@@ -36,7 +36,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+
 import com.genralstaff.responseModel.AvailableDriversResponse
+import com.genralstaff.responseModel.ShopsListResponse          // ✅ AJOUTER ICI
+import com.genralstaff.network.retrofitService                  // ← déjà là
 import com.genralstaff.network.retrofitService
 import retrofit2.Response
 
@@ -99,6 +102,8 @@ class AuthViewModel : BaseViewModel() {
     private val _orderDetailResponse = MutableLiveData<OrderDetailNewResponse?>()
     fun onOrderDetailResponse(): LiveData<OrderDetailNewResponse?> = _orderDetailResponse
 
+    private val _subadminShopsResponse = MutableLiveData<ShopsListResponse?>()
+    fun onSubadminShopsResponse(): LiveData<ShopsListResponse?> = _subadminShopsResponse
     fun uploadFiles(imagePart: MultipartBody.Part) {
         showProgress()
         viewModelScope.launch(homeExceptionHandler) {
@@ -488,6 +493,14 @@ class AuthViewModel : BaseViewModel() {
     ): Response<AvailableDriversResponse> {
         return retrofitService.getAvailableDrivers(shopId, driverType)
     }
+    suspend fun deleteRoom(roomId: String): ContentsResponse {
+        return retrofitService.deleteRoom(roomId)
+    }
+    suspend fun getShopItemsDirect(map: HashMap<String, String>): ShopItemsResponse {
+        return retrofitService.shopItems(map)
+    }
+
+
     private val homeExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         var errorMessage = throwable.message
         if (throwable is UnknownHostException || throwable is SocketTimeoutException) {
@@ -498,5 +511,25 @@ class AuthViewModel : BaseViewModel() {
         hideProgress()
         showErrorMessage(errorMessage)
     }
+    fun changeOrderStatus(hashMap: HashMap<String, String>) {
+        viewModelScope.launch(homeExceptionHandler) {
+            val response = ApiCallsHandler.safeApiCall(this@AuthViewModel) {
+                authRepo.changeOrderStatus(hashMap)
+            }
+            hideProgress()
+            _commonResponse.value = response
+        }
+    }
+    fun getSubadminShops() {
+        showProgress()
+        viewModelScope.launch(homeExceptionHandler) {
+            val response = ApiCallsHandler.safeApiCall<ShopsListResponse>(this@AuthViewModel) {
+                authRepo.getSubadminShops()
+            }
+            hideProgress()
+            _subadminShopsResponse.value = response
+        }
+    }
+
 
 }

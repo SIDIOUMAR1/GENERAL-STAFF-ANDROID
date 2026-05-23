@@ -31,10 +31,11 @@
     <LinearLayout
         android:id="@+id/llBottom"
         android:layout_width="0dp"
-        android:layout_height="@dimen/_45sdp"
+        android:layout_height="wrap_content"
         android:background="@color/app_theme_color"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/_15sdp"
+        android:paddingTop="@dimen/_8sdp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -43,7 +44,7 @@
             android:id="@+id/rlHome"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="match_parent">
+            android:layout_height="@dimen/_30sdp">
             <ImageView
                 android:id="@+id/ivHome"
                 android:layout_width="match_parent"
@@ -57,7 +58,7 @@
             android:id="@+id/rlNotification"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="match_parent">
+            android:layout_height="@dimen/_30sdp">
             <ImageView
                 android:id="@+id/ivNotification"
                 android:layout_width="match_parent"
@@ -70,7 +71,7 @@
             android:id="@+id/rlMessage"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="match_parent">
+            android:layout_height="@dimen/_30sdp">
 
             <ImageView
                 android:id="@+id/ivMessage"
@@ -84,7 +85,7 @@
             android:id="@+id/rlSettings"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="match_parent">
+            android:layout_height="@dimen/_30sdp">
             <ImageView
                 android:id="@+id/ivSettings"
                 android:layout_width="match_parent"

@@ -3,25 +3,32 @@ package com.genralstaff.base
 
 //
 
-
+//
 //URL + KEYS
-//const val BASE_URL = "https://app.generall.fr/api/"
+
+const val BASE_URL = "https://app.generall.fr/api/"
+const val profileBaseUrl = "https://app.generall.fr/uploads/img/users/"
+const val imageURL = "https://app.generall.fr/uploads/img/adminUsers/"
+const val SOCKET_URL = "https://app.generall.fr/"
+
+//dar
+//
+//const val BASE_URL = "http://192.168.100.135:8000/api/"
+//const val profileBaseUrl = "http://192.168.100.135:8000/uploads/img/users/"
+//const val imageURL = "http://192.168.100.135:8000/uploads/img/adminUsers/"
+//const val SOCKET_URL = "http://192.168.100.135:8000/"
+
+//stage
+//const val BASE_URL = "http://192.168.100.54:8000/api/"
 //const val profileBaseUrl = "http://192.168.100.54:8000/uploads/img/users/"
-//const val imageURL = "https://app.generall.fr/uploads/img/adminUsers/"
-//const val SOCKET_URL = "https://app.generall.fr/"
-
-
-//const val BASE_URL = "http://192.168.100.81:8000/api/"
-//const val profileBaseUrl = "http://192.168.100.81:8000/uploads/img/users/"
-//const val imageURL = "http://192.168.100.81:8000/uploads/img/adminUsers/"
-//const val SOCKET_URL = "http://192.168.100.81:8000/"
-
-
+//const val imageURL = "http://192.168.100.54:8000/uploads/img/adminUsers/"
+//const val SOCKET_URL = "http://192.168.100.54:8000/"
+//
 // URL + KEYS
-const val BASE_URL = "http://94.250.202.181:8000/api/"
-const val profileBaseUrl = "http://94.250.202.181:8000/uploads/img/users/"
-const val imageURL = "http://94.250.202.181:8000/uploads/img/adminUsers/"
-const val SOCKET_URL = "http://94.250.202.181:8000/"
+//const val BASE_URL = "http://94.250.202.181:8000/api/"
+//const val profileBaseUrl = "http://94.250.202.181:8000/uploads/img/users/"
+//const val imageURL = "http://94.250.202.181:8000/uploads/img/adminUsers/"
+//const val SOCKET_URL = "http://94.250.202.181:8000/"
 
 const val UNUSUAL_ERROR = "Something went wrong"
 //Api's endpoints
@@ -65,4 +72,5 @@ const val USERID = "userId"
 const val AUTH_KEY = "auth_key"
 const val LANGUAGE = "language"
 
+const val DELETE_ROOM = "room/"
 

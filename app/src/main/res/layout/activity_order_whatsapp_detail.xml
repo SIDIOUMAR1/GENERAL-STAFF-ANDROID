@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/_20sdp">
+
+        <!-- Header -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/app_theme_color"
+            android:paddingHorizontal="@dimen/_15sdp"
+            android:paddingVertical="@dimen/_15sdp">
+
+            <ImageView
+                android:id="@+id/ivClose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_back"
+                app:tint="@color/white"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/_10sdp"
+                android:fontFamily="@font/poppins_bold"
+                android:text="Détails Commande WhatsApp"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_14sdp"
+                app:layout_constraintStart_toEndOf="@id/ivClose"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Succès Banner -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#E8F5E9"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="@dimen/_10sdp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="✅ Commande lancée avec succès !"
+                android:textColor="#2E7D32"
+                android:textSize="@dimen/_12sdp"/>
+        </LinearLayout>
+
+        <!-- Infos commande -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_15sdp"
+            android:layout_marginTop="@dimen/_15sdp"
+            android:background="@drawable/round_bg_stroke"
+            android:orientation="vertical"
+            android:padding="@dimen/_12sdp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="🏪 Restaurant"
+                android:textColor="#939393"
+                android:textSize="@dimen/_11sdp"/>
+
+            <TextView
+                android:id="@+id/tvShopName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_bold"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_13sdp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="@dimen/_8sdp"
+                android:background="#EEEEEE"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="💰 Frais de livraison"
+                android:textColor="#939393"
+                android:textSize="@dimen/_11sdp"/>
+
+            <TextView
+                android:id="@+id/tvDeliveryCharge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_bold"
+                android:textColor="@color/app_theme_color"
+                android:textSize="@dimen/_13sdp"/>
+        </LinearLayout>
+
+        <!-- WhatsApp Driver -->
+        <LinearLayout
+            android:id="@+id/llWhatsappDriver"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_15sdp"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:background="@drawable/round_bg_stroke"
+            android:orientation="vertical"
+            android:padding="@dimen/_12sdp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="📱 WhatsApp Driver"
+                android:textColor="#939393"
+                android:textSize="@dimen/_11sdp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginTop="@dimen/_5sdp">
+
+                <TextView
+                    android:id="@+id/tvWhatsappNumber"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_bold"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/_13sdp"/>
+
+                <!-- ✅ Icone copier -->
+                <ImageView
+                    android:id="@+id/ivCopyWhatsapp"
+                    android:layout_width="@dimen/_30sdp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:layout_marginEnd="@dimen/_8sdp"
+                    android:background="@drawable/round_bg"
+                    android:backgroundTint="#E3F2FD"
+                    android:padding="@dimen/_6sdp"
+                    android:src="@drawable/baseline_content_copy_24"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnOpenWhatsapp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/_30sdp"
+                    android:background="@drawable/round_corner_stroke_back_black"
+                    android:backgroundTint="#25D366"
+                    android:fontFamily="@font/poppins_medium"
+                    android:text="Ouvrir"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_10sdp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Vocal Restaurant -->
+        <LinearLayout
+            android:id="@+id/llShopAudio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_15sdp"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:background="@drawable/round_bg_stroke"
+            android:orientation="vertical"
+            android:padding="@dimen/_12sdp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="🎤 Vocal Restaurant"
+                    android:textColor="#939393"
+                    android:textSize="@dimen/_11sdp"/>
+
+                <ImageView
+                    android:id="@+id/btnShareShopAudio"
+                    android:layout_width="@dimen/_30sdp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:background="@drawable/round_bg"
+                    android:backgroundTint="@color/app_theme_color"
+                    android:padding="@dimen/_6sdp"
+                    android:src="@drawable/ic_share"
+                    app:tint="@color/white"/>
+            </LinearLayout>
+
+            <com.rygelouv.audiosensei.player.AudioSenseiPlayerView
+                android:id="@+id/playerShopAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_8sdp"/>
+        </LinearLayout>
+
+        <!-- Vocal Utilisateur -->
+        <LinearLayout
+            android:id="@+id/llUserAudio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_15sdp"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:background="@drawable/round_bg_stroke"
+            android:orientation="vertical"
+            android:padding="@dimen/_12sdp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="🎤 Vocal Utilisateur"
+                    android:textColor="#939393"
+                    android:textSize="@dimen/_11sdp"/>
+
+                <ImageView
+                    android:id="@+id/btnShareUserAudio"
+                    android:layout_width="@dimen/_30sdp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:background="@drawable/round_bg"
+                    android:backgroundTint="@color/app_theme_color"
+                    android:padding="@dimen/_6sdp"
+                    android:src="@drawable/ic_share"
+                    app:tint="@color/white"/>
+            </LinearLayout>
+
+            <com.rygelouv.audiosensei.player.AudioSenseiPlayerView
+                android:id="@+id/playerUserAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_8sdp"/>
+        </LinearLayout>
+
+        <!-- Bouton Fermer -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnClose"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_40sdp"
+            android:layout_marginHorizontal="@dimen/_15sdp"
+            android:layout_marginTop="@dimen/_20sdp"
+            android:background="@drawable/round_corner_stroke_back_black"
+            android:backgroundTint="@color/app_theme_color"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="Voir les commandes"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_13sdp"/>
+
+    </LinearLayout>
+</ScrollView>

@@ -30,7 +30,8 @@ data class ShopDetailResponse(
         val phone: String?,
         val status: Int?,
         val user: User?,
-        val user_id: Int?
+        val user_id: Int?,
+        val shop_location_audio: String? = null
     ) {
         data class Category(
             val name: String?

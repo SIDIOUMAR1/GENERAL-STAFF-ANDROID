@@ -68,6 +68,7 @@ import java.util.Locale
 import java.util.Random
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+
 class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     var latitude = ""
     var longitude = ""
@@ -100,7 +101,8 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
         "#EF5350", "#66BB6A", "#FFA726", "#AB47BC", "#29B6F6"
     )
 
-    //  Ajouter cette variable en haut de la classe
+    private var whatsappNumber = ""
+    var userPhone = ""
     private var pendingUploadType = ""
     private lateinit var socketManager: SocketManager
     private val activityScope = CoroutineScope(Dispatchers.Main)
@@ -123,6 +125,7 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
         longitude = intent.getStringExtra("user_longitude").toString()
         latitudeShop = intent.getStringExtra("latitudeShop").toString()
         longitudeShop = intent.getStringExtra("longitudeShop").toString()
+        userPhone = intent.getStringExtra("user_phone") ?: ""
         binding.tvShopName.text = shop_name
         binding.tvLocation.text = getCity(latitude, longitude, this)
         binding.tvShopLocation.text = getCity(latitudeShop, longitudeShop, this)
@@ -167,21 +170,18 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 }
 
                 startRecording = false
-              countDownTimer!!.cancel()
+                countDownTimer!!.cancel()
 
-              val file: File = File(AudioSavePathInDevice!!)
-             if (file.exists()) {
-                val audioPath = AudioSavePathInDevice!!
-                val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
-                 // Capturer le type AVANT l'upload async
-                 pendingUploadType = currentRecordingType
-                 authViewModel.uploadFiles(imagePart)
-                 AudioSavePathInDevice = ""
+                val file: File = File(AudioSavePathInDevice!!)
+                if (file.exists()) {
+                    val audioPath = AudioSavePathInDevice!!
+                    val imagePart: MultipartBody.Part = prepareFilePart("media", File(audioPath))
+                    pendingUploadType = currentRecordingType
+                    authViewModel.uploadFiles(imagePart)
+                    AudioSavePathInDevice = ""
+                }
             }
         }
-        }
-
-
 
         binding.ivCross.setOnClickListener {
             audio = ""
@@ -199,16 +199,16 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             binding.timer!!.text = "00:00"
         }
 
-        // ✅ APRÈS — tvDelete est TOUJOURS le bouton du 1er vocal
         binding.tvDelete.setOnClickListener {
             audio = ""
-            binding.ivMic.visibility = View.VISIBLE  // ← toujours le 1er micro
+            binding.ivMic.visibility = View.VISIBLE
             binding.rlAudioPlay.visibility = View.GONE
             Glide.with(this).clear(binding.ivGif!!)
             binding.ivGif!!.setImageDrawable(null)
             binding.rlRecordView.visibility = View.GONE
             binding.tvDelete.visibility = View.GONE
         }
+
         binding.tvDeleteSummary.setOnClickListener {
             audioSummary = ""
             binding.ivMicSummary.visibility = View.VISIBLE
@@ -236,7 +236,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                         if (checkedItems[i]) selectedDriverTypes.add(driverTypes[i])
                     }
                     binding.tvSelectDriverType.text = selectedDriverTypes.joinToString(", ")
-                    // ✅ AJOUTER CES 5 LIGNES
                     driversLoaded = false
                     availableDrivers.clear()
                     selectedDriverId = null
@@ -251,7 +250,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 .show()
         }
 
-        // ✅ NOUVEAUX LISTENERS AJOUTÉS
         binding.cbAssignDirectly.setOnCheckedChangeListener { _, isChecked ->
             assignDirectly = isChecked
             if (isChecked) {
@@ -267,11 +265,19 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             } else {
                 binding.llDriverSelection.visibility = View.GONE
                 hideSelectedDriverCard()
-                // selectedDriverId et selectedDriverObj sont gardés en mémoire !
             }
         }
 
-        // ✅ NOUVEAU CODE (FONCTIONNE)
+        // ✅ NOUVEAU: Checkbox WhatsApp
+        binding.cbAssignWhatsapp.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                binding.llWhatsappNumber.visibility = View.VISIBLE
+            } else {
+                binding.llWhatsappNumber.visibility = View.GONE
+                binding.edWhatsappNumber.setText("")
+            }
+        }
+
         binding.btnSelectDriver.setOnClickListener {
             if (availableDrivers.isEmpty()) loadAvailableDrivers()
             else showDriverPickerDialog()
@@ -325,11 +331,12 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             openPlacePickerNew()
         }
     }
+
     override fun onResume() {
         super.onResume()
         Log.e("AddOrderActivity", "📡 onResume() - Activation du listener")
         socketManager.onRegister(this)
-        socketManager.onaddorderListener()  // ✅ CRITICAL: Active le listener
+        socketManager.onaddorderListener()
     }
 
     override fun onPause() {
@@ -377,7 +384,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                                     String.format(Locale.US, "%02d:%02d", minutes, seconds)
                             }
 
-                            // ✅ APRÈS — protégé avec try-catch
                             override fun onFinish() {
                                 startRecording = false
                                 binding.timer!!.text = "05:00"
@@ -506,29 +512,23 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
 
     private fun initializeSockets() {
         Log.e("AddOrderActivity", "🔧 DÉBUT initializeSockets()")
-
         socketManager = MyApplication.mInstance?.getSocketManager()!!
         Log.e("AddOrderActivity", "✅ SocketManager obtenu")
-
         socketManager.init()
         Log.e("AddOrderActivity", "✅ Socket initialisé")
-
         socketManager.onRegister(this)
         Log.e("AddOrderActivity", "✅ Observer enregistré")
-
         socketManager.onaddorderListener()
         Log.e("AddOrderActivity", "✅ Listener add_order activé")
-
-        // Vérifier si le socket est connecté
         if (socketManager.isConnected()) {
             Log.e("AddOrderActivity", "✅ Socket CONNECTÉ")
         } else {
             Log.e("AddOrderActivity", "❌ Socket NON CONNECTÉ")
         }
-
         viewModelSetupAndResponse()
         callShopsApi()
     }
+
     private fun openPlacePicker() {
         val fields =
             listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG, Place.Field.ADDRESS)
@@ -548,7 +548,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     private fun addOrderSocket() {
         val description = binding.edDescription.text.toString()
 
-        // ✅ LOGS DE DEBUG
         Log.e("AddOrder", "==========================================")
         Log.e("AddOrder", "DÉBUT addOrderSocket()")
         Log.e("AddOrder", "assignDirectly = $assignDirectly")
@@ -587,7 +586,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 put("shop_address", binding.tvShopLocation.text.toString())
                 put("driver_type", driverTypeEnglish.trim())
 
-                // ✅ LOGS DÉTAILLÉS ICI
                 if (assignDirectly && selectedDriverId != null) {
                     put("assigned_driver_id", selectedDriverId!!)
                     Log.e("AddOrder", "✅ AJOUT DE assigned_driver_id = $selectedDriverId")
@@ -625,9 +623,24 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 }
 
                 put("delivery_charge", binding.edFee.text.toString())
+
+                // ✅ NOUVEAU: Numéro WhatsApp externe
+                // APRÈS
+                if (binding.cbAssignWhatsapp.isChecked) {
+                    val number = binding.edWhatsappNumber.text.toString().trim()
+                    if (number.isNotEmpty()) {
+                        val fullNumber = if (number.startsWith("+")) number else "+222$number"
+                        put("whatsapp_number", fullNumber)
+                        Log.e("AddOrder", "✅ WhatsApp number: $fullNumber")
+                    }
+                }
+                // ✅ Envoyer confirmation WhatsApp au client
+                if (binding.cbAssignWhatsapp.isChecked && userPhone.isNotEmpty()) {
+                    val fullPhone = if (userPhone.startsWith("+")) userPhone else "+222$userPhone"
+                    put("user_whatsapp", fullPhone)
+                }
             }
 
-            // ✅ LOG DU JSON COMPLET
             Log.e("AddOrder", "==========================================")
             Log.e("AddOrder", "JSON ENVOYÉ AU SOCKET:")
             Log.e("AddOrder", jsonObjects.toString())
@@ -636,6 +649,16 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             Log.e("AddOrder", "audio variable: '$audio'")
             Log.e("AddOrder", "audioSummary variable: '$audioSummary'")
             Log.e("AddOrder", "pendingUploadType: '$pendingUploadType'")
+
+            val orderIdToCancel = intent.getStringExtra("order_id_to_cancel")
+            if (!orderIdToCancel.isNullOrEmpty()) {
+                val cancelJson = JSONObject().apply {
+                    put("order_id", orderIdToCancel)
+                }
+                socketManager.cancelOrderSocket(cancelJson)
+                Log.e("AddOrder", "✅ Ancienne commande annulée: $orderIdToCancel")
+            }
+
 
             socketManager.addOrderSocket(jsonObjects)
 
@@ -705,7 +728,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
         authViewModel.onUploadProfileResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
-                    // ✅ Utiliser pendingUploadType au lieu de currentRecordingType
                     if (pendingUploadType == "user_location") {
                         audio = it.body.media.toString()
                         binding.ivMic.visibility = View.GONE
@@ -719,7 +741,7 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                         val audio_url = profileBaseUrl + audioSummary
                         binding.rightAudioPlayerSummary.setAudioTarget(audio_url)
                     }
-                    pendingUploadType = ""  // ✅ Réinitialiser après
+                    pendingUploadType = ""
                     binding.rlRecordView.visibility = View.GONE
                     binding.apply {
                         rlRecordView.visibility = View.GONE
@@ -803,46 +825,42 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     override fun onResponse(event: String, args: JSONObject) {
         when (event) {
             SocketManager.add_order_listner -> {
-                // ✅ AJOUTEZ CES LOGS
                 Log.e("AddOrderActivity", "📥 RÉPONSE REÇUE: add_order_listner")
                 Log.e("AddOrderActivity", "📦 ARGS: $args")
 
                 activityScope.launch {
                     progressDialog.hide()
-
                     val notAdded = args.optInt("notAdded", -1)
 
+                    if (binding.cbAssignWhatsapp.isChecked) {
+                        Utils.showToast(this@AddOrderActivity, "🚀 Commande lancée via WhatsApp !")
+                        startActivity(
+                            Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
+                                .putExtra("type", "current_orders")
+                                .putExtra("types", "add_orders")
+                        )
+                        finish()
+                        return@launch
+                    }
+
                     if (notAdded == 0) {
-                        // Cas 1: Pas de chauffeurs trouvés
                         Log.e("AddOrderActivity", "❌ Aucun chauffeur disponible")
                         showAlert(getString(R.string.no_driver_type_found_for_this_order))
                     } else {
-                        // Cas 2: Commande créée avec succès
-                        // Vérifier si on a reçu un order_detail valide
                         val orderId = args.optInt("id", -1)
-
                         if (orderId != -1) {
                             Log.e("AddOrderActivity", "✅ Commande créée ID: $orderId")
                             Utils.showToast(this@AddOrderActivity, "Commande créée avec succès")
-
-                            startActivity(
-                                Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
-                                    .putExtra("type", "current_orders")
-                                    .putExtra("types", "add_orders")
-                            )
-                            finish()
                         } else {
                             Log.e("AddOrderActivity", "⚠️ Réponse reçue mais format inattendu")
-                            // Quand même fermer l'activité car la commande est probablement créée
                             Utils.showToast(this@AddOrderActivity, "Commande envoyée")
-
-                            startActivity(
-                                Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
-                                    .putExtra("type", "current_orders")
-                                    .putExtra("types", "add_orders")
-                            )
-                            finish()
                         }
+                        startActivity(
+                            Intent(this@AddOrderActivity, OrderHistoryActivity::class.java)
+                                .putExtra("type", "current_orders")
+                                .putExtra("types", "add_orders")
+                        )
+                        finish()
                     }
                 }
             }
@@ -865,7 +883,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
     override fun onBlockError(event: String, args: String) {
     }
 
-    // ✅ NOUVELLES FONCTIONS AJOUTÉES À LA FIN
     private fun loadAvailableDrivers() {
         if (!Utils.internetAvailability(this)) {
             Utils.showToast(this, getString(R.string.no_internet_connection))
@@ -889,7 +906,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             }
             .joinToString(",")
 
-        // ✅ AJOUTEZ CE LOG
         Log.e("LoadDrivers", "Shop ID: $shop_id")
         Log.e("LoadDrivers", "Driver Types: $selectedDriverTypes")
 
@@ -898,7 +914,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 val response = authViewModel.getAvailableDrivers(shop_id, selectedDriverTypes)
                 progressDialog.hide()
 
-                // ✅ AJOUTEZ CE LOG
                 Log.e("LoadDrivers", "Response Code: ${response.code()}")
                 Log.e("LoadDrivers", "Response Successful: ${response.isSuccessful}")
                 Log.e("LoadDrivers", "Response Body: ${response.body()}")
@@ -906,7 +921,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
 
-                    // ✅ AJOUTEZ CE LOG
                     Log.e("LoadDrivers", "Body Code: ${body.code}")
                     Log.e("LoadDrivers", "Drivers Count: ${body.body.drivers.size}")
 
@@ -914,45 +928,35 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                         availableDrivers.clear()
                         availableDrivers.addAll(body.body.drivers)
 
-                        // ✅ AJOUTEZ CE LOG
                         Log.e("LoadDrivers", "Available Drivers: ${availableDrivers.size}")
 
                         if (availableDrivers.isEmpty()) {
-                            Utils.showErrorDialog(this@AddOrderActivity,
-                                "Aucun chauffeur disponible")
+                            Utils.showErrorDialog(this@AddOrderActivity, "Aucun chauffeur disponible")
                             binding.cbAssignDirectly.isChecked = false
                             binding.llDriverSelection.visibility = View.GONE
                         } else {
-                            // ✅ AJOUTEZ CE LOG
                             Log.e("LoadDrivers", "Calling setupDriverAdapter()")
-                            driversLoaded = true  // ← AJOUTER CETTE LIGNE
+                            driversLoaded = true
                             showDriverPickerDialog()
-
-                            // ✅ AJOUTEZ CE LOG APRÈS setupDriverAdapter
                             Log.e("LoadDrivers", "Adapter set, driver count: ${availableDrivers.size}")
                         }
                     } else {
-                        // ✅ AJOUTEZ CE LOG
                         Log.e("LoadDrivers", "Error: ${body.message}")
                         Utils.showToast(this@AddOrderActivity, body.message)
                         binding.cbAssignDirectly.isChecked = false
                         binding.llDriverSelection.visibility = View.GONE
                     }
                 } else {
-                    // ✅ AJOUTEZ CE LOG
                     Log.e("LoadDrivers", "Response not successful or body null")
-                    Utils.showToast(this@AddOrderActivity,
-                        "Erreur lors du chargement des chauffeurs")
+                    Utils.showToast(this@AddOrderActivity, "Erreur lors du chargement des chauffeurs")
                     binding.cbAssignDirectly.isChecked = false
                     binding.llDriverSelection.visibility = View.GONE
                 }
             } catch (e: Exception) {
                 progressDialog.hide()
-                // ✅ MODIFIEZ CE LOG
                 Log.e("LoadDrivers", "Exception: ${e.message}", e)
                 e.printStackTrace()
-                Utils.showToast(this@AddOrderActivity,
-                    "Erreur: ${e.message ?: "Unknown"}")
+                Utils.showToast(this@AddOrderActivity, "Erreur: ${e.message ?: "Unknown"}")
                 binding.cbAssignDirectly.isChecked = false
                 binding.llDriverSelection.visibility = View.GONE
             }
@@ -1030,6 +1034,7 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
         "human" -> "🚶"
         else -> "🚗"
     }
+
     inner class DriverPickerAdapter(
         private val drivers: List<AvailableDriversResponse.Driver>,
         private val onSelect: (AvailableDriversResponse.Driver) -> Unit
@@ -1063,7 +1068,7 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
             holder.tvVehicle.text = "${getVehicleEmoji(driver.vehicle_type)} ${driver.vehicle_type ?: "N/A"}"
             holder.tvDistance.text = "${driver.distance} km"
             holder.itemView.setOnClickListener { onSelect(driver) }
-            // ✅ BOUTON APPEL
+
             holder.llCall.setOnClickListener {
                 val phone = driver.phone
                 if (phone.isNotEmpty()) {
@@ -1072,8 +1077,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                 }
             }
 
-// ✅ BOUTON MESSAGE
-            // ✅ BOUTON MESSAGE
             holder.llMessage.setOnClickListener {
                 selectedDriverId = driver.id
                 selectedDriverObj = driver
@@ -1096,9 +1099,6 @@ class AddOrderActivity : AppCompatActivity(), SocketManager.Observer {
                     Utils.showToast(this@AddOrderActivity, "Erreur: ${e.message}")
                 }
             }
-
         }
     }
-
-
 }

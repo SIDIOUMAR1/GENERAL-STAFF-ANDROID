@@ -3,6 +3,8 @@ package com.genralstaff.adapter
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import androidx.appcompat.app.AlertDialog
+import com.genralstaff.network.retrofitService
 import android.graphics.Typeface
 import android.util.Log
 import android.view.LayoutInflater
@@ -25,7 +27,6 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.Locale
-
 
 class MessageListingAdapter(
     private val mContext: Context,
@@ -370,7 +371,12 @@ class MessageListingAdapter(
                     } else {
                         profileBaseUrl + (chatItem.receiver_detail?.profile_pic)
                     }
-                phone_no = "${chatItem.shop_detail?.country_code ?: ""}${chatItem.shop_detail?.phone ?: ""}"
+                // ✅ Numéro de l'utilisateur (pas du restaurant)
+                phone_no = if (MyApplication.prefs?.getString("userId") == chatItem.receiver_detail?.id.toString()) {
+                    "${chatItem.sender_detail?.country_code ?: ""}${chatItem.sender_detail?.phone_no ?: ""}"
+                } else {
+                    "${chatItem.receiver_detail?.country_code ?: ""}${chatItem.receiver_detail?.phone_no ?: ""}"
+                }
                 shopId = chatItem.shop_detail.id.toString() // Initialize shopId here
                 shopName = chatItem.shop_detail.name.toString() // Initialize shopId here
                 val userId = MyApplication.prefs?.getString("userId")
@@ -431,6 +437,28 @@ class MessageListingAdapter(
             mContext.startActivity(intent)
 
             Log.e("setClickListener: ", "$otherUserId $otherUserName $otherUserImage $shopId")
+        }
+        holder.itemView.setOnLongClickListener {
+            AlertDialog.Builder(mContext)
+                .setTitle("Supprimer la conversation")
+                .setMessage("Voulez-vous supprimer cette conversation ?")
+                .setPositiveButton("Supprimer") { dialog, _ ->
+                    dialog.dismiss()
+                    coroutineScope.launch {
+                        try {
+                            val roomId = chatItem.id.toString()
+                            retrofitService.deleteRoom(roomId)
+                            arrayList.remove(chatItem)
+                            arrayList1.remove(chatItem)
+                            notifyDataSetChanged()
+                        } catch (e: Exception) {
+                            Log.e("DeleteRoom", "Error: ${e.message}")
+                        }
+                    }
+                }
+                .setNegativeButton("Annuler") { dialog, _ -> dialog.dismiss() }
+                .show()
+            true
         }
     }
 

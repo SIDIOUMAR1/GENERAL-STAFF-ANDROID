@@ -6,7 +6,7 @@ import com.genralstaff.network.retrofitService
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-
+import com.genralstaff.responseModel.ShopsListResponse  // ✅ AJOUTER ICI
 
 class AuthRepo {
     private var retrofitInterface: RetrofitInterface = retrofitService
@@ -56,4 +56,10 @@ class AuthRepo {
     suspend fun editShop(params: HashMap<String, RequestBody>) = retrofitInterface.editShop(params)
     suspend fun addProduct(params: HashMap<String, RequestBody>,imagePart: ArrayList<MultipartBody.Part>) = retrofitInterface.addProduct(params,imagePart)
     suspend fun editProduct(params: HashMap<String, RequestBody>,imagePart: ArrayList<MultipartBody.Part>) = retrofitInterface.editProduct(params,imagePart)
+
+    suspend fun changeOrderStatus(params: HashMap<String, String>) = retrofitInterface.changeOrderStatus(params)
+    suspend fun getSubadminShops(): ShopsListResponse {
+        val map = hashMapOf("page" to "1", "limit" to "100")
+        return retrofitInterface.getSubadminShops(map)
+    }
 }

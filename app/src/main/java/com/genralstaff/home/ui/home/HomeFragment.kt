@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
+import com.genralstaff.home.ui.AddOrderManualActivity
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
@@ -115,6 +116,9 @@ class HomeFragment : Fragment(), SocketManager.Observer {
                 Intent(requireActivity(), OrderHistoryActivity::class.java)
                     .putExtra("type", "orders")
             )
+        }
+        binding.fabNewOrder.setOnClickListener {
+            startActivity(Intent(requireActivity(), AddOrderManualActivity::class.java))
         }
     }
 

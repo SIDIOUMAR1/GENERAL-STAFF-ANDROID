@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".home.ui.ChatActivity">
 
     <!-- ─── HEADER ─────────────────────────────────────────────── -->
@@ -77,6 +78,16 @@
             android:src="@drawable/ic_call_icon" />
 
         <ImageView
+            android:id="@+id/ivMenu"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:padding="@dimen/_3sdp"
+            android:src="@drawable/ic_shopping_cart"
+            android:visibility="gone" />
+
+        <ImageView
             android:id="@+id/ivBoost"
             android:layout_width="@dimen/_50sdp"
             android:layout_height="@dimen/_50sdp"
@@ -107,25 +118,6 @@
          Visible uniquement quand on chat avec un DRIVER (userType == "2")
          Positionné entre l'en-tête et la liste de messages           -->
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnShareUserInfo"
-        android:layout_width="wrap_content"
-        android:layout_height="@dimen/_32sdp"
-        android:layout_marginEnd="@dimen/_10sdp"
-        android:layout_marginTop="@dimen/_4sdp"
-        android:layout_marginBottom="@dimen/_4sdp"
-        android:background="@color/app_theme_color"
-        android:drawableStart="@drawable/ic_share"
-        android:drawablePadding="@dimen/_4sdp"
-        android:fontFamily="@font/poppins_medium"
-        android:paddingHorizontal="@dimen/_10sdp"
-        android:text="Partager info utilisateur"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        android:textSize="@dimen/_10sdp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvOrder" />
 
     <!-- ─── LISTE MESSAGES ──────────────────────────────────────── -->
     <!-- ⚠️ CHANGEMENT : constraintTop passe de tvOrder → btnShareUserInfo -->
@@ -139,8 +131,7 @@
         app:layout_constraintBottom_toTopOf="@+id/rlSend"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnShareUserInfo" />
-
+        app:layout_constraintTop_toBottomOf="@+id/tvOrder" />
     <!-- ─── AUCUN MESSAGE ───────────────────────────────────────── -->
 
     <TextView

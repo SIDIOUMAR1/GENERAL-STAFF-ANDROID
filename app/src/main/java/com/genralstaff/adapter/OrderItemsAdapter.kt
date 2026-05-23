@@ -41,16 +41,15 @@ class OrderItemsAdapter(
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
 
         Glide.with(context).load(imageURL + ordersList[position].shop.image)
-            .placeholder(
-                R.drawable.place_holder
-            ).into(holder.binding.rivOrder)
-        holder.binding.tvAmount.text =  ordersList[position].delivery_charge+"UM"
+            .placeholder(R.drawable.place_holder)
+            .into(holder.binding.rivOrder)
+        holder.binding.tvAmount.text = ordersList[position].delivery_charge + "UM"
         holder.binding.tvName.text = ordersList[position].shop.name
-        holder.binding.tvCusterName.text = context.getString(R.string.customer_name)+" "+ordersList[position].user_detail.name
-        holder.binding.tvCusterPhone.text = context.getString(R.string.phone_number)+": "+ordersList[position].user_detail.country_code+ordersList[position].user_detail.phone_no
+        holder.binding.tvCusterName.text = context.getString(R.string.customer_name) + " " + ordersList[position].user_detail.name
+        holder.binding.tvCusterPhone.text = context.getString(R.string.phone_number) + ": " + ordersList[position].user_detail.country_code + ordersList[position].user_detail.phone_no
         holder.binding.tvLocation.text = ordersList[position].location
-
         holder.binding.tvDateTime.text = printDate(ordersList[position].created_at)
+
         holder.binding.tvCancel.setOnClickListener {
             onItemClickListener?.invoke(position, "cancel")
         }
@@ -66,29 +65,40 @@ class OrderItemsAdapter(
         holder.binding.tvDetail.setOnClickListener {
             onItemClickListener?.invoke(position, "detail")
         }
+        holder.binding.btnModifier.setOnClickListener {
+            onItemClickListener?.invoke(position, "modifier")
+        }
+        holder.binding.btnChangeStatus.setOnClickListener {
+            onItemClickListener?.invoke(position, "changeStatus")
+        }
 
-        // 0- pending, 1- accepted, 2- completed
         val status = ordersList[position].status ?: 0
         when (status) {
             0 -> {
-                holder.binding.btnReOrder.visibility=View.VISIBLE
+                holder.binding.btnReOrder.visibility = View.VISIBLE
+                holder.binding.btnModifier.visibility = View.VISIBLE
+                holder.binding.btnChangeStatus.visibility = View.VISIBLE
                 holder.binding.tvContactOrder.visibility = View.GONE
-
                 holder.binding.tvTrackOrder.text = context.getString(R.string.pending)
+                holder.binding.btnChangeStatus.text = "Statut ▾"
+                holder.binding.btnChangeStatus.backgroundTintList =
+                    android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
             }
-
             1 -> {
-                holder.binding.btnReOrder.visibility=View.GONE
+                holder.binding.btnReOrder.visibility = View.GONE
+                holder.binding.btnModifier.visibility = View.GONE
+                holder.binding.btnChangeStatus.visibility = View.VISIBLE
+                holder.binding.btnChangeStatus.text = "Statut ▾"
+                holder.binding.btnChangeStatus.backgroundTintList =
+                    android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2196F3"))
                 when (ordersList[position].driver_status) {
                     0 -> {
                         holder.binding.tvTrackOrder.text = context.getString(R.string.accepted)
                         holder.binding.tvWeight.text = context.getString(R.string.driver_accepted)
-
                     }
                     1 -> {
                         holder.binding.tvTrackOrder.text = context.getString(R.string.accepted)
                         holder.binding.tvWeight.text = context.getString(R.string.driver_accepted)
-
                     }
                     2 -> {
                         holder.binding.tvTrackOrder.text = context.getString(R.string.picked)
@@ -99,40 +109,36 @@ class OrderItemsAdapter(
                         holder.binding.tvWeight.text = context.getString(R.string.driver_picked)
                     }
                 }
-
             }
             2 -> {
-                holder.binding.btnReOrder.visibility=View.GONE
-
+                holder.binding.btnReOrder.visibility = View.GONE
+                holder.binding.btnModifier.visibility = View.GONE
+                holder.binding.btnChangeStatus.visibility = View.GONE
                 if (ordersList[position].driver_status == 3) {
                     holder.binding.tvWeight.visibility = View.GONE
                     holder.binding.tvCancel.visibility = View.GONE
                     holder.binding.tvContactOrder.visibility = View.GONE
                     holder.binding.tvTrackOrder.text = context.getString(R.string.delivered)
                 } else {
-                    holder.binding.tvTrackOrder.text =  context.getString(R.string.picked)
+                    holder.binding.tvTrackOrder.text = context.getString(R.string.picked)
                     holder.binding.tvWeight.text = context.getString(R.string.driver_picked)
                 }
-
             }
-
             3 -> {
-                holder.binding.btnReOrder.visibility=View.GONE
-
+                holder.binding.btnReOrder.visibility = View.GONE
+                holder.binding.btnModifier.visibility = View.GONE
+                holder.binding.btnChangeStatus.visibility = View.GONE
                 holder.binding.tvWeight.visibility = View.GONE
                 holder.binding.tvCancel.visibility = View.GONE
                 holder.binding.tvContactOrder.visibility = View.GONE
-                holder.binding.tvTrackOrder.text =context.getString(R.string.cancel)
+                holder.binding.tvTrackOrder.text = context.getString(R.string.cancel)
             }
-
             else -> {
-                holder.binding.btnReOrder.visibility=View.GONE
-
-                // Handle other cases if needed
+                holder.binding.btnReOrder.visibility = View.GONE
+                holder.binding.btnModifier.visibility = View.GONE
+                holder.binding.btnChangeStatus.visibility = View.GONE
             }
         }
-
-
     }
 
     fun filter(charText: String, binding: ActivityOrderHistoryBinding) {

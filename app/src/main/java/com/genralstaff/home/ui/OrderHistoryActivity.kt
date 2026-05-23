@@ -161,6 +161,50 @@ private val progressDialog by lazy { CustomProgressDialog() }
                                     }
 
                                 }
+                                "modifier" -> {
+                                    val order = adapter!!.ordersList[pos]
+                                    startActivity(
+                                        Intent(this@OrderHistoryActivity, AddOrderActivity::class.java)
+                                            .putExtra("userId", order.user_id.toString())
+                                            .putExtra("shopId", order.shop_id.toString())
+                                            .putExtra("shopName", order.shop.name)
+                                            .putExtra("user_latitude", order.latitude ?: "")
+                                            .putExtra("user_longitude", order.longitude ?: "")
+                                            .putExtra("latitudeShop", order.shop.latitude ?: "")  // ← shop.latitude
+                                            .putExtra("longitudeShop", order.shop.longitude ?: "")  // ← shop.longitude
+                                            .putExtra("order_id_to_cancel", order.id.toString())
+                                    )
+                                }
+                                "changeStatus" -> {
+                                    val order = adapter!!.ordersList[pos]
+                                    val currentStatus = order.status ?: 0
+
+                                    when (currentStatus) {
+                                        0 -> {
+                                            androidx.appcompat.app.AlertDialog.Builder(this)
+                                                .setTitle("Changer le statut")
+                                                .setItems(arrayOf("✅ Accepter")) { _, which ->
+                                                    when (which) {
+                                                        0 -> changeOrderStatus(order.id.toString(), "1")
+                                                    }
+                                                }
+                                                .setNegativeButton("Annuler") { d, _ -> d.dismiss() }
+                                                .show()
+                                        }
+                                        1 -> {
+                                            androidx.appcompat.app.AlertDialog.Builder(this)
+                                                .setTitle("Changer le statut")
+                                                .setItems(arrayOf("⏳ En attente", "✅ Livré")) { _, which ->
+                                                    when (which) {
+                                                        0 -> changeOrderStatus(order.id.toString(), "0")
+                                                        1 -> changeOrderStatus(order.id.toString(), "2")
+                                                    }
+                                                }
+                                                .setNegativeButton("Annuler") { d, _ -> d.dismiss() }
+                                                .show()
+                                        }
+                                    }
+                                }
                                 else -> {
                                     contactDialog(pos, type)
                                 }
@@ -297,87 +341,98 @@ private val progressDialog by lazy { CustomProgressDialog() }
         val tvCancel = dialog.findViewById<TextView>(R.id.tvCancel)
         val tvWhatsApp = dialog.findViewById<TextView>(R.id.tvWhatsApp)
         tvCancel.setOnClickListener { dialog.dismiss() }
+
+        val order = adapter!!.ordersList[pos]
+        val hasDriver = order.driver_detail != null
+
         tvMessage.setOnClickListener {
             dialog.dismiss()
-
             if (type == "driver") {
+                // ✅ Si driver WhatsApp uniquement → ouvrir WhatsApp directement
+                if (!hasDriver) {
+                    val waNumber = order.whatsapp_number
+                    if (!waNumber.isNullOrEmpty()) {
+                        val number = waNumber.replace("+", "")
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$number")))
+                    } else {
+                        Utils.showToast(this, "Aucun contact disponible pour ce driver")
+                    }
+                    return@setOnClickListener
+                }
                 startActivity(
-                    Intent(this, ChatActivity::class.java).putExtra(
-                        "otherUserId",
-                        adapter!!.ordersList[pos].driver_id.toString()
-                    ).putExtra("otherUserName", adapter!!.ordersList[pos].driver_detail.name)
-                        .putExtra(
-                            "otherUserImage",
-                            adapter!!.ordersList[pos].driver_detail.profile_pic
-                        )
-                        .putExtra(
-                            "phone_no",
-                            adapter!!.ordersList[pos].driver_detail.phone_no.toString()
-                        )
+                    Intent(this, ChatActivity::class.java)
+                        .putExtra("otherUserId", order.driver_id.toString())
+                        .putExtra("otherUserName", order.driver_detail.name)
+                        .putExtra("otherUserImage", order.driver_detail.profile_pic)
+                        .putExtra("phone_no", order.driver_detail.phone_no.toString())
                         .putExtra("userType", "2")
                         .putExtra("shopName", "null")
-
                 )
             } else {
                 var driverLatLng: LatLng? = null
                 var shopLatLng: LatLng? = null
-                driverLatLng = LatLng(
-                    adapter!!.ordersList[pos].user_detail.latitude.toDouble(),
-                    adapter!!.ordersList[pos].user_detail.longitude.toDouble()
-                )
-                shopLatLng = LatLng(
-                    adapter!!.ordersList[pos].shop.latitude.toDouble(),
-                    adapter!!.ordersList[pos].shop.longitude.toDouble()
-                )
+                try {
+                    driverLatLng = LatLng(
+                        order.user_detail.latitude.toDouble(),
+                        order.user_detail.longitude.toDouble()
+                    )
+                    shopLatLng = LatLng(
+                        order.shop.latitude.toDouble(),
+                        order.shop.longitude.toDouble()
+                    )
+                } catch (e: Exception) { }
 
                 startActivity(
-                    Intent(this, ChatActivity::class.java).putExtra(
-                        "otherUserId",
-                        adapter!!.ordersList[pos].user_id.toString()
-                    ).putExtra("otherUserName", adapter!!.ordersList[pos].user_detail.name)
-                        .putExtra(
-                            "otherUserImage",
-                            adapter!!.ordersList[pos].user_detail.profile_pic
-                        )
-                        .putExtra(
-                            "phone_no",
-                            adapter!!.ordersList[pos].user_detail.phone_no.toString()
-                        )
+                    Intent(this, ChatActivity::class.java)
+                        .putExtra("otherUserId", order.user_id.toString())
+                        .putExtra("otherUserName", order.user_detail.name)
+                        .putExtra("otherUserImage", order.user_detail.profile_pic)
+                        .putExtra("phone_no", order.user_detail.phone_no.toString())
                         .putExtra("userType", "3")
-                        .putExtra("shopName", adapter!!.ordersList[pos].shop.name)
-                        .putExtra("shopId", adapter!!.ordersList[pos].shop_id.toString())
-                        .putExtra("shopPhone", adapter!!.ordersList[pos].shop.phone.toString())
+                        .putExtra("shopName", order.shop.name)
+                        .putExtra("shopId", order.shop_id.toString())
+                        .putExtra("shopPhone", order.shop.phone.toString())
                         .putExtra("driverLatLng", driverLatLng)
                         .putExtra("shopLatLng", shopLatLng)
-
                 )
             }
-
-
         }
+
         tvWhatsApp.setOnClickListener {
             dialog.dismiss()
             if (type == "driver") {
-
-                openWhatsApps(adapter!!.ordersList[pos].driver_detail.phone_no)
+                val waNumber = order.whatsapp_number
+                if (!waNumber.isNullOrEmpty()) {
+                    val number = waNumber.replace("+", "")
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$number")))
+                } else if (hasDriver) {
+                    openWhatsApps(order.driver_detail.phone_no)
+                } else {
+                    Utils.showToast(this, "Aucun numéro WhatsApp disponible")
+                }
             } else {
-                openWhatsApps(adapter!!.ordersList[pos].user_detail.phone_no)
-
+                val waNumber = order.user_whatsapp
+                if (!waNumber.isNullOrEmpty()) {
+                    val number = waNumber.replace("+", "")
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$number")))
+                } else {
+                    openWhatsApps(order.user_detail.phone_no)
+                }
             }
-
         }
+
         tvCall.setOnClickListener {
             dialog.dismiss()
             if (type == "driver") {
-
-                makePhoneCall(adapter!!.ordersList[pos].driver_detail.phone_no, this)
+                if (hasDriver) {
+                    makePhoneCall(order.driver_detail.phone_no, this)
+                } else {
+                    Utils.showToast(this, "Aucun numéro disponible pour ce driver")
+                }
             } else {
-                makePhoneCall(adapter!!.ordersList[pos].user_detail.phone_no, this)
-
+                makePhoneCall(order.user_detail.phone_no, this)
             }
         }
-
-
 
         dialog.show()
     }
@@ -514,6 +569,16 @@ private val progressDialog by lazy { CustomProgressDialog() }
         }
     }
 
+    private fun changeOrderStatus(orderId: String, newStatus: String) {
+        val map = HashMap<String, String>()
+        map["order_id"] = orderId
+        map["status"] = newStatus
+        authViewModel.changeOrderStatus(map)
+        lifecycleScope.launch {
+            delay(1000)
+            callOrdersApi()
+        }
+    }
     private fun initializeSockets() {
         socketManager = MyApplication.mInstance?.getSocketManager()!!
         socketManager.init()

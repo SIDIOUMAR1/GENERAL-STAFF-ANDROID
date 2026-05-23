@@ -2,6 +2,7 @@ package com.genralstaff.network
 
 import com.genralstaff.base.ADD_PRODUCT
 import com.genralstaff.base.ADD_SHOP
+import com.genralstaff.responseModel.ShopsListResponse          // ✅ AJOUTER ICI
 import com.genralstaff.base.CATEGORIES
 import com.genralstaff.base.CATEGORIES_Types
 import com.genralstaff.base.CHECK_ORDER
@@ -27,6 +28,8 @@ import com.genralstaff.base.UPLOAD_MEDIA
 import com.genralstaff.base.add_type
 import com.genralstaff.base.delete_product
 import com.genralstaff.base.delete_type
+import retrofit2.http.DELETE
+import com.genralstaff.base.DELETE_ROOM
 import com.genralstaff.base.get_types
 import com.genralstaff.responseModel.CategoriesListResponse
 import com.genralstaff.responseModel.GetShopsResponse
@@ -122,6 +125,11 @@ interface RetrofitInterface {
     @GET("$CONTENT{id}")
     suspend fun content(@Path("id") id: String): ContentsResponse
 
+    @GET("subadmin/shops")
+    suspend fun getSubadminShops(
+        @QueryMap params: HashMap<String, String>
+    ): ShopsListResponse
+
     @GET(PROFILE_DETAIL)
     suspend fun profile(): ProfileResponse
     @GET(LOGOUT)
@@ -201,5 +209,9 @@ interface RetrofitInterface {
         @Query("driver_type") driverType: String? = null
     ): Response<AvailableDriversResponse>
 
+    @POST("change/order/status")
+    suspend fun changeOrderStatus(@Body map: HashMap<String, String>): CommonResponse
 
+    @DELETE("${DELETE_ROOM}{room_id}")
+    suspend fun deleteRoom(@Path("room_id") roomId: String): ContentsResponse
 }

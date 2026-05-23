@@ -15,6 +15,10 @@ import com.genralstaff.utils.MyApplication
 import com.genralstaff.utils.getCity
 import com.genraluser.utils.LocationUpdateUtilityActivity
 import com.google.android.gms.maps.model.LatLng
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import android.app.NotificationManager
+import android.content.Context
 
 class HomeActivity : LocationUpdateUtilityActivity() {
 
@@ -52,6 +56,16 @@ class HomeActivity : LocationUpdateUtilityActivity() {
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.llBottom) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(
+                view.paddingLeft,
+                view.paddingTop,
+                view.paddingRight,
+                systemBars.bottom
+            )
+            insets
+        }
         val lang = MyApplication.prefs!!.getPrefrenceLanguage(LANGUAGE, "en").toString()
 
         langu = when (lang) {
@@ -179,6 +193,12 @@ class HomeActivity : LocationUpdateUtilityActivity() {
 
     }
 
+
+    override fun onResume() {
+        super.onResume()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancelAll()
+    }
     private lateinit var socketManager: SocketManager
 
     private fun initializeSockets() {

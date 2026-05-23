@@ -147,6 +147,11 @@
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait" />
+        <activity
+            android:name=".home.ui.AddOrderManualActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".home.ui.OrderWhatsappDetailActivity" />
 
         <service
             android:name=".fcm.MyFirebaseMessagingService"

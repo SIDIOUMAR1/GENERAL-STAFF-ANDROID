@@ -29,7 +29,9 @@ data class OrderHistoryResponse(
             val updated_at: String,
             val user_detail: UserDetail,
             val driver_detail: DriverDetail,
-            val user_id: Int
+            val user_id: Int,
+            val user_whatsapp: String? = null,
+            val whatsapp_number: String? = null
         ) {
             data class Product(
                 val image: String,

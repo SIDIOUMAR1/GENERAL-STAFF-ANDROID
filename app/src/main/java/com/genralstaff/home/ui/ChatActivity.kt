@@ -3,6 +3,7 @@ package com.genralstaff.home.ui
 import android.Manifest
 import android.app.Dialog
 import android.content.Context
+import com.genralstaff.adapter.MenuCartAdapter
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -59,7 +60,10 @@ import java.io.File
 import java.io.IOException
 import java.util.Locale
 import java.util.Random
-
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.updateLayoutParams
 
 class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     private lateinit var binding: ActivityChatBinding
@@ -80,7 +84,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
 
     // ✅ NOUVELLES VARIABLES : audio et localisation utilisateur
     private var audioUserLocation = ""   // vocal emplacement utilisateur (1er vocal)
-    private var userInfoAlreadyShared = false  // évite double envoi accidentel
+
 
     var startRecording = false
     var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
@@ -105,6 +109,20 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         super.onCreate(savedInstanceState)
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rlSend) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                bottomMargin = systemBars.bottom + 24
+            }
+            insets
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(binding.tvName) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                topMargin = systemBars.top + 24  // ← 24px au lieu de _10sdp
+            }
+            insets
+        }
 
         AudioSenseiListObserver.getInstance().registerLifecycle(this@ChatActivity.lifecycle)
         checkPermission()
@@ -173,6 +191,9 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             shopId = intent.getStringExtra("shopId").toString()
         }
         phoneNumber = intent.getStringExtra("phone_no").toString()
+        Log.e("ChatPhone", "phoneNumber: '$phoneNumber'")
+        Log.e("ChatPhone", "shopPhone: '${intent.getStringExtra("shopPhone")}'")
+        Log.e("ChatPhone", "userType: '${intent.getStringExtra("userType")}'")
         if (intent.getStringExtra("shopPhone") != null) {
             shopPhone = intent.getStringExtra("shopPhone").toString()
         }
@@ -206,7 +227,6 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             binding.tvDistance.visibility = View.INVISIBLE
             binding.tvOrder.visibility = View.INVISIBLE
             binding.ivBoost.visibility = View.GONE
-            binding.btnShareUserInfo.visibility = View.VISIBLE  // ✅ toujours visible
         }else {
             // ── Chat avec un UTILISATEUR ──────────────────────────────
             binding.ivWhatsApp.visibility = View.VISIBLE
@@ -214,9 +234,9 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             binding.tvDistance.visibility = View.VISIBLE
             binding.ivCall.visibility = View.VISIBLE
             binding.ivBoost.visibility = View.VISIBLE
+            binding.ivMenu.visibility = View.VISIBLE
 
-            // ✅ Cacher le bouton pour les conversations utilisateur
-            binding.btnShareUserInfo.visibility = View.GONE
+
         }
 
         binding.ivBoost.setOnClickListener {
@@ -224,6 +244,14 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             map["user_id"] = otherUserId
             map["shop_id"] = shopId
             authViewModel.checkOrder(map)
+        }
+
+        binding.ivMenu.setOnClickListener {
+            if (shopId.isEmpty()) {
+                Utils.showToast(this, "Aucun restaurant associé")
+                return@setOnClickListener
+            }
+            showMenuBottomSheet()
         }
     }
 
@@ -262,18 +290,23 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         )
 
         binding.tvContactUser.setOnClickListener {
+            dialog.dismiss()
             if (s == "call") {
                 makePhoneCall(phoneNumber, this@ChatActivity)
             } else {
-                openWhatsApps(phoneNumber)
+                val number = phoneNumber.replace("+", "").replace(" ", "")
+                val fullNumber = if (number.startsWith("222")) number else "222$number"
+                openWhatsApps(fullNumber)
             }
         }
-
         binding.tvContactShop.setOnClickListener {
+            dialog.dismiss()
             if (s == "call") {
                 makePhoneCall(shopPhone, this@ChatActivity)
             } else {
-                openWhatsApps(shopPhone)
+                val number = shopPhone.replace("+", "").replace(" ", "")
+                val fullNumber = if (number.startsWith("222")) number else "222$number"
+                openWhatsApps(fullNumber)
             }
         }
 
@@ -289,12 +322,9 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             getImage(this, 0)
         }
 
+
         binding.ivWhatsApp.setOnClickListener {
-            if (intent.getStringExtra("shopPhone") == null) {
-                openWhatsApps(phoneNumber)
-            } else {
-                contactDialog("whatsApp")
-            }
+            contactDialog("whatsApp")
         }
 
         binding.ivCall.setOnClickListener {
@@ -336,94 +366,11 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
             }
         }
 
-        // ✅ BOUTON "PARTAGER INFO UTILISATEUR"
-        binding.btnShareUserInfo.setOnClickListener {
-            showShareUserInfoConfirmDialog()
-        }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ✅ DIALOGUE DE CONFIRMATION avant d'envoyer les infos
-    // ─────────────────────────────────────────────────────────────────────────
-    private fun showShareUserInfoConfirmDialog() {
-        // ✅ Si déjà partagé → juste informer
-        if (userInfoAlreadyShared) {
-            Utils.showToast(this, "✅ Infos utilisateur déjà partagées avec le driver")
-            return
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Partager info utilisateur")
-            .setMessage("Confirmer l'envoi de la localisation et du vocal de l'utilisateur au driver ?")
-            .setPositiveButton("Envoyer") { dialog, _ ->
-                dialog.dismiss()
-                shareUserInfo()
-            }
-            .setNegativeButton("Annuler") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ✅ LOGIQUE PRINCIPALE : envoie le lien Maps + le vocal utilisateur
-    // ─────────────────────────────────────────────────────────────────────────
-    private fun shareUserInfo() {
-        if (!Utils.internetAvailability(this)) {
-            Utils.showToast(this, getString(R.string.no_internet_connection))
-            return
-        }
-        Log.e("ShareUserInfo", "=== DEBUG SHARE ===")
-        Log.e("ShareUserInfo", "user_latitude: $user_latitude")
-        Log.e("ShareUserInfo", "user_longitude: $user_longitude")
-        Log.e("ShareUserInfo", "audioUserLocation: $audioUserLocation")
-        Log.e("ShareUserInfo", "===================")
 
-        // Vérifier que la localisation utilisateur est disponible
-        val hasLocation = user_latitude.isNotEmpty()
-                && user_latitude != "null"
-                && user_longitude.isNotEmpty()
-                && user_longitude != "null"
 
-        val hasAudio = audioUserLocation.isNotEmpty()
-
-        if (!hasLocation && !hasAudio) {
-            Utils.showToast(this, "Aucune info utilisateur disponible")
-            return
-        }
-
-        val userId = prefs?.getString("userId")
-
-        // ── 1. Envoyer le lien Google Maps de l'utilisateur ──────────
-        if (hasLocation) {
-            val mapsLink = "https://www.google.com/maps?q=$user_latitude,$user_longitude"
-            val jsonLocation = JSONObject().apply {
-                put("message", "📍 Localisation utilisateur : $mapsLink")
-                put("receiver_id", otherUserId.toInt())
-                put("message_type", 1)   // type texte
-                put("sender_id", userId?.toInt())
-                if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
-            }
-            socketManager.send_message(jsonLocation)
-            Log.e("ShareUserInfo", "✅ Lien Maps envoyé : $mapsLink")
-        }
-
-        // ── 2. Envoyer le vocal de l'emplacement utilisateur ─────────
-        if (hasAudio) {
-            val jsonAudio = JSONObject().apply {
-                put("message", audioUserLocation)   // URL relative déjà uploadée
-                put("receiver_id", otherUserId.toInt())
-                put("message_type", 3)   // type audio
-                put("sender_id", userId?.toInt())
-                if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
-            }
-            socketManager.send_message(jsonAudio)
-            Log.e("ShareUserInfo", "✅ Vocal utilisateur envoyé : $audioUserLocation")
-        }
-
-        // ── 3. Masquer le bouton après l'envoi ───────────────────────
-        userInfoAlreadyShared = true
-        Utils.showToast(this, "✅ Infos utilisateur partagées avec le driver")
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -529,11 +476,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 audioUserLocation = room.audio_user_location ?: ""
                 Log.e("ChatActivity", "audioUserLocation récupéré : $audioUserLocation")
 
-                // ✅ Si le bouton est déjà affiché et qu'on n'a pas encore partagé,
-                //    mettre à jour sa visibilité selon la disponibilité des données
-                if (userType == "2") {
-                    binding.btnShareUserInfo.visibility = View.VISIBLE
-                }
+
             }
 
             // ── Extraire la liste des messages ───────────────────────
@@ -684,6 +627,8 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                                 .putExtra("user_longitude", user_longitude)
                                 .putExtra("latitudeShop", latitudeShop)
                                 .putExtra("longitudeShop", longitudeShop)
+                                .putExtra("user_phone", phoneNumber)
+
                         )
                     } else {
                         checkOrder()
@@ -836,6 +781,57 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     result1 == PackageManager.PERMISSION_GRANTED
         }
     }
+    private fun showMenuBottomSheet() {
+        val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(
+            this, R.style.BottomSheetDialogTheme
+        )
+        val view = layoutInflater.inflate(R.layout.dialog_menu_cart, null)
+        bottomSheet.setContentView(view)
+
+        val rvMenu = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvMenuItems)
+        val tvTotal = view.findViewById<android.widget.TextView>(R.id.tvTotal)
+        val btnSend = view.findViewById<android.widget.Button>(R.id.btnSendOrder)
+        val ivClose = view.findViewById<android.widget.ImageView>(R.id.ivCloseMenu)
+
+        ivClose.setOnClickListener { bottomSheet.dismiss() }
+
+        activityScope.launch {
+            try {
+                val map = hashMapOf("shop_id" to shopId, "page" to "1", "limit" to "100")
+                val response = authViewModel.getShopItemsDirect(map)
+                if (response.code == 200) {
+                    val items = response.body.data
+                    val adapter = MenuCartAdapter(this@ChatActivity, items) { total: Double ->
+                        tvTotal.text = "Total : ${total.toInt()} MRU"
+                    }
+                    rvMenu.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@ChatActivity)
+                    rvMenu.adapter = adapter
+
+                    btnSend.setOnClickListener {
+                        if (!adapter.hasItems()) {
+                            Utils.showToast(this@ChatActivity, "Ajoutez des produits d'abord")
+                            return@setOnClickListener
+                        }
+                        val summary = adapter.getCartSummary()
+                        val userId = prefs?.getString("userId")
+                        val jsonObject = org.json.JSONObject().apply {
+                            put("message", summary)
+                            put("receiver_id", otherUserId.toInt())
+                            put("message_type", 1)
+                            put("sender_id", userId?.toInt())
+                            if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
+                        }
+                        socketManager.send_message(jsonObject)
+                        bottomSheet.dismiss()
+                        Utils.showToast(this@ChatActivity, "✅ Commande envoyée !")
+                    }
+                }
+            } catch (e: Exception) {
+                Utils.showToast(this@ChatActivity, "Erreur chargement menu")
+            }
+        }
+        bottomSheet.show()
+    }
 
     private fun checkOrder() {
         val dialog = Dialog(this)
@@ -864,6 +860,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     .putExtra("user_longitude", user_longitude)
                     .putExtra("latitudeShop", latitudeShop)
                     .putExtra("longitudeShop", longitudeShop)
+                    .putExtra("user_phone", phoneNumber)
             )
         }
 
