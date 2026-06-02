@@ -85,6 +85,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     // ✅ NOUVELLES VARIABLES : audio et localisation utilisateur
     private var audioUserLocation = ""   // vocal emplacement utilisateur (1er vocal)
 
+    private var lastCartQuantities = HashMap<Int, Int>()
 
     var startRecording = false
     var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
@@ -440,8 +441,12 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
 
     private fun displayChatMessages() {
         messageAdapter = ChatAdapter(this, list, otherUserImage)
+        messageAdapter.onModifyCartListener = { previousMessage ->
+            if (shopId.isNotEmpty()) showMenuBottomSheet(previousMessage)
+        }
         binding.rvChat.adapter = messageAdapter
     }
+
 
     var user_latitude = ""
     var user_longitude = ""
@@ -781,56 +786,204 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                     result1 == PackageManager.PERMISSION_GRANTED
         }
     }
-    private fun showMenuBottomSheet() {
+    private fun showMenuBottomSheet(previousMessage: String = "") {
         val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(
             this, R.style.BottomSheetDialogTheme
         )
         val view = layoutInflater.inflate(R.layout.dialog_menu_cart, null)
         bottomSheet.setContentView(view)
+        bottomSheet.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        bottomSheet.behavior.skipCollapsed = true
+        bottomSheet.behavior.isDraggable = false
+
+        bottomSheet.behavior.peekHeight = resources.displayMetrics.heightPixels
 
         val rvMenu = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvMenuItems)
+        val rvCategories = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvMenuCategories)
+        val rvCart = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvCartItems)
         val tvTotal = view.findViewById<android.widget.TextView>(R.id.tvTotal)
         val btnSend = view.findViewById<android.widget.Button>(R.id.btnSendOrder)
         val ivClose = view.findViewById<android.widget.ImageView>(R.id.ivCloseMenu)
+        val etSearch = view.findViewById<android.widget.EditText>(R.id.etSearch)
+        val flCartBadge = view.findViewById<android.widget.FrameLayout>(R.id.flCartBadge)
+        val tvCartBadge = view.findViewById<android.widget.TextView>(R.id.tvCartBadge)
+        val viewFlipper = view.findViewById<android.widget.ViewFlipper>(R.id.viewFlipper)
 
         ivClose.setOnClickListener { bottomSheet.dismiss() }
+        rvMenu.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        rvCart.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
-        activityScope.launch {
-            try {
-                val map = hashMapOf("shop_id" to shopId, "page" to "1", "limit" to "100")
-                val response = authViewModel.getShopItemsDirect(map)
-                if (response.code == 200) {
-                    val items = response.body.data
-                    val adapter = MenuCartAdapter(this@ChatActivity, items) { total: Double ->
-                        tvTotal.text = "Total : ${total.toInt()} MRU"
-                    }
-                    rvMenu.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@ChatActivity)
-                    rvMenu.adapter = adapter
+        var menuAdapter: MenuCartAdapter? = null
+        var allProducts = listOf<com.genralstaff.responseModel.ShopItemsResponse.Body.Data>()
 
-                    btnSend.setOnClickListener {
-                        if (!adapter.hasItems()) {
-                            Utils.showToast(this@ChatActivity, "Ajoutez des produits d'abord")
-                            return@setOnClickListener
-                        }
-                        val summary = adapter.getCartSummary()
-                        val userId = prefs?.getString("userId")
-                        val jsonObject = org.json.JSONObject().apply {
-                            put("message", summary)
-                            put("receiver_id", otherUserId.toInt())
-                            put("message_type", 1)
-                            put("sender_id", userId?.toInt())
-                            if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
-                        }
-                        socketManager.send_message(jsonObject)
-                        bottomSheet.dismiss()
-                        Utils.showToast(this@ChatActivity, "✅ Commande envoyée !")
-                    }
-                }
-            } catch (e: Exception) {
-                Utils.showToast(this@ChatActivity, "Erreur chargement menu")
+        fun updateBadge(count: Int) {
+            if (count > 0) {
+                tvCartBadge.visibility = android.view.View.VISIBLE
+                tvCartBadge.text = count.toString()
+            } else {
+                tvCartBadge.visibility = android.view.View.GONE
             }
         }
+
+        fun updateTotalLabel(total: Double) {
+            tvTotal.text = "المجموع : ${total.toInt()} MRU"
+        }
+
+        fun updateCartView() {
+            val cartItems = menuAdapter?.getCartItems() ?: return
+            val adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+                override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int) =
+                    object : androidx.recyclerview.widget.RecyclerView.ViewHolder(
+                        android.view.LayoutInflater.from(parent.context)
+                            .inflate(R.layout.item_menu_product, parent, false)
+                    ) {}
+
+                override fun getItemCount() = cartItems.size
+
+                override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
+                    val (item, qty) = cartItems[position]
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductName).text = item.name
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductPrice).text =
+                        "${qty} × ${item.price} = ${(qty * (item.price?.toDoubleOrNull() ?: 0.0)).toInt()} MRU"
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvQuantity).text = qty.toString()
+
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvPlus).setOnClickListener {
+                        menuAdapter?.addOne(item.id)
+                        updateBadge(menuAdapter?.getCartCount() ?: 0)
+                        updateCartView() // ✅ Refresh cart view
+                    }
+
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvMinus).setOnClickListener {
+                        menuAdapter?.removeOne(item.id)
+                        updateBadge(menuAdapter?.getCartCount() ?: 0)
+                        updateCartView() // ✅ Refresh cart view
+                    }
+                }
+            }
+            rvCart.adapter = adapter
+        }
+
+        // ✅ Toggle entre produits et panier
+        flCartBadge.setOnClickListener {
+            if (viewFlipper.displayedChild == 0) {
+                updateCartView()
+                viewFlipper.displayedChild = 1
+            } else {
+                viewFlipper.displayedChild = 0
+            }
+        }
+
+        fun loadProducts(typeId: String) {
+            activityScope.launch {
+                try {
+                    val map = hashMapOf(
+                        "shop_id" to shopId,
+                        "page" to "1",
+                        "limit" to "100",
+                        "type_id" to typeId
+                    )
+                    val response = authViewModel.getShopItemsDirect(map)
+                    if (response.code == 200) {
+                        val items = response.body.data
+                        if (menuAdapter == null) {
+                            menuAdapter = MenuCartAdapter(this@ChatActivity, items) { total ->
+                                updateTotalLabel(total)
+                                updateBadge(menuAdapter?.getCartCount() ?: 0)
+                            }
+                            menuAdapter?.updateItems(items)
+                            if (lastCartQuantities.isNotEmpty()) {
+                                menuAdapter?.setQuantities(lastCartQuantities)
+                            }
+                            rvMenu.adapter = menuAdapter
+                            if (previousMessage.isNotEmpty()) menuAdapter?.prefillFromMessage(previousMessage)
+                        } else {
+                            menuAdapter?.updateItems(items)
+                            if (lastCartQuantities.isNotEmpty()) {
+                                menuAdapter?.setQuantities(lastCartQuantities)
+                            }
+
+                            if (previousMessage.isNotEmpty()) menuAdapter?.prefillFromMessage(previousMessage)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Utils.showToast(this@ChatActivity, "Erreur chargement produits")
+                }
+            }
+        }
+
+        // ✅ Charger TOUS les produits pour recherche globale
+        activityScope.launch {
+            try {
+                val allResponse = authViewModel.getShopItemsDirect(
+                    hashMapOf("shop_id" to shopId, "page" to "1", "limit" to "500")
+                )
+                if (allResponse.code == 200) allProducts = allResponse.body.data
+            } catch (e: Exception) {}
+        }
+
+        // ✅ Charger catégories
+        activityScope.launch {
+            try {
+                val categoriesResponse = com.genralstaff.network.retrofitService.get_types(shopId)
+                val categories = categoriesResponse.body ?: emptyList()
+                if (categories.isNotEmpty()) {
+                    val categoryAdapter = com.genralstaff.adapter.MenuCategoryAdapter(
+                        this@ChatActivity, categories
+                    ) { categoryId -> loadProducts(categoryId) }
+                    rvCategories.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(
+                        this@ChatActivity,
+                        androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false
+                    )
+                    rvCategories.adapter = categoryAdapter
+                    loadProducts(categories.first().id.toString())
+                } else {
+                    loadProducts("")
+                }
+            } catch (e: Exception) {
+                loadProducts("")
+            }
+        }
+
+        // ✅ Recherche globale
+        etSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                menuAdapter?.filterGlobal(s.toString(), allProducts)
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+
+        // ✅ Envoyer
+        btnSend.setOnClickListener {
+            val adapter = menuAdapter ?: return@setOnClickListener
+            if (!adapter.hasItems()) {
+                Utils.showToast(this, "أضف منتجات أولاً")
+                return@setOnClickListener
+            }
+            val summary = adapter.getCartSummary(true)
+            val userId = prefs?.getString("userId")
+            val jsonObject = org.json.JSONObject().apply {
+                put("message", summary)
+                put("receiver_id", otherUserId.toInt())
+                put("message_type", 1)
+                put("sender_id", userId?.toInt())
+                if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
+            }
+            socketManager.send_message(jsonObject)
+            lastCartQuantities = adapter.getQuantities()
+            bottomSheet.dismiss()
+            Utils.showToast(this, "✅ تم إرسال الطلب!")
+        }
+
         bottomSheet.show()
+        val screenHeight = resources.displayMetrics.heightPixels
+        view.minimumHeight = screenHeight
+        bottomSheet.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        )
+
+
     }
 
     private fun checkOrder() {

@@ -2,59 +2,159 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="@dimen/_10sdp">
+    android:background="@color/white">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="@dimen/_5sdp">
+        android:paddingHorizontal="@dimen/_14sdp"
+        android:paddingVertical="@dimen/_12sdp"
+        android:background="@color/app_theme_color">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🛒 Menu"
+            android:text="Menu"
             android:textSize="@dimen/_16sdp"
             android:fontFamily="@font/poppins_bold"
-            android:textColor="@color/black"/>
+            android:textColor="@color/white"/>
+
+        <!-- Cart icon with badge -->
+        <FrameLayout
+            android:id="@+id/flCartBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/_12sdp">
+
+            <ImageView
+                android:layout_width="@dimen/_26sdp"
+                android:layout_height="@dimen/_26sdp"
+                android:src="@drawable/ic_shopping_cart"
+                app:tint="@color/white"/>
+
+            <TextView
+                android:id="@+id/tvCartBadge"
+                android:layout_width="@dimen/_16sdp"
+                android:layout_height="@dimen/_16sdp"
+                android:gravity="center"
+                android:textSize="@dimen/_8sdp"
+                android:textColor="@color/white"
+                android:fontFamily="@font/poppins_bold"
+                android:background="@drawable/badge_bg"
+                android:text="0"
+                android:layout_gravity="top|end"
+                android:visibility="gone"/>
+        </FrameLayout>
 
         <ImageView
             android:id="@+id/ivCloseMenu"
-            android:layout_width="@dimen/_25sdp"
-            android:layout_height="@dimen/_25sdp"
-            android:src="@drawable/cross_icon"/>
+            android:layout_width="@dimen/_22sdp"
+            android:layout_height="@dimen/_22sdp"
+            android:src="@drawable/cross_icon"
+            app:tint="@color/white"/>
     </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMenuItems"
+    <!-- ViewFlipper: 0=Products, 1=Cart -->
+    <ViewFlipper
+        android:id="@+id/viewFlipper"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/_250sdp"
-        android:layout_marginTop="@dimen/_5sdp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:minHeight="500dp">
 
+        <!-- Vue 1: Produits -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/_10sdp"
+                android:padding="@dimen/_8sdp"
+                android:hint="🔍 Rechercher..."
+                android:background="@drawable/edit_text_bg"
+                android:textSize="@dimen/_12sdp"
+                android:inputType="text"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMenuCategories"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_40sdp"
+                android:layout_marginHorizontal="@dimen/_8sdp"
+                android:layout_marginBottom="@dimen/_5sdp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/lightgrey"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMenuItems"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+        </LinearLayout>
+
+        <!-- Vue 2: Panier -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🛒 Mon Panier"
+                android:textSize="@dimen/_14sdp"
+                android:fontFamily="@font/poppins_bold"
+                android:textColor="@color/black"
+                android:padding="@dimen/_12sdp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/lightgrey"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCartItems"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+        </LinearLayout>
+
+    </ViewFlipper>
+
+    <!-- Footer -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/grey"
-        android:layout_marginVertical="@dimen/_8sdp"/>
+        android:background="@color/lightgrey"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="@dimen/_5sdp">
+        android:padding="@dimen/_12sdp">
 
         <TextView
             android:id="@+id/tvTotal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Total : 0 MRU"
-            android:textSize="@dimen/_14sdp"
+            android:text="المجموع : 0 MRU"
+            android:textSize="@dimen/_13sdp"
             android:fontFamily="@font/poppins_bold"
             android:textColor="@color/black"/>
 
@@ -62,9 +162,10 @@
             android:id="@+id/btnSendOrder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📤 Envoyer"
+            android:text="إرسال 📤"
             android:backgroundTint="@color/app_theme_color"
-            android:textColor="@color/white"/>
+            android:textColor="@color/white"
+            android:textSize="@dimen/_11sdp"/>
     </LinearLayout>
 
 </LinearLayout>

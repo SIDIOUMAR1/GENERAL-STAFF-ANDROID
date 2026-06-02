@@ -4,23 +4,14 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="@dimen/_8sdp">
-
-    <com.makeramen.roundedimageview.RoundedImageView
-        android:id="@+id/ivProduct"
-        android:layout_width="@dimen/_45sdp"
-        android:layout_height="@dimen/_45sdp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/place_holder"
-        app:riv_corner_radius="@dimen/_8sdp"
-        xmlns:app="http://schemas.android.com/apk/res-auto"/>
+    android:paddingHorizontal="@dimen/_12sdp"
+    android:paddingVertical="@dimen/_6sdp">
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="@dimen/_8sdp">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvProductName"
@@ -43,22 +34,24 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:background="@drawable/rounded_qty_bg"
+        android:padding="@dimen/_2sdp">
 
         <TextView
             android:id="@+id/tvMinus"
-            android:layout_width="@dimen/_25sdp"
-            android:layout_height="@dimen/_25sdp"
+            android:layout_width="@dimen/_22sdp"
+            android:layout_height="@dimen/_22sdp"
             android:text="−"
             android:gravity="center"
-            android:textSize="@dimen/_16sdp"
-            android:textColor="@color/white"
-            android:background="@color/app_theme_color"/>
+            android:textSize="@dimen/_14sdp"
+            android:textColor="@color/app_theme_color"
+            android:fontFamily="@font/poppins_bold"/>
 
         <TextView
             android:id="@+id/tvQuantity"
-            android:layout_width="@dimen/_25sdp"
-            android:layout_height="@dimen/_25sdp"
+            android:layout_width="@dimen/_22sdp"
+            android:layout_height="@dimen/_22sdp"
             android:text="0"
             android:gravity="center"
             android:textSize="@dimen/_12sdp"
@@ -67,13 +60,13 @@
 
         <TextView
             android:id="@+id/tvPlus"
-            android:layout_width="@dimen/_25sdp"
-            android:layout_height="@dimen/_25sdp"
+            android:layout_width="@dimen/_22sdp"
+            android:layout_height="@dimen/_22sdp"
             android:text="+"
             android:gravity="center"
-            android:textSize="@dimen/_16sdp"
-            android:textColor="@color/white"
-            android:background="@color/app_theme_color"/>
+            android:textSize="@dimen/_14sdp"
+            android:textColor="@color/app_theme_color"
+            android:fontFamily="@font/poppins_bold"/>
     </LinearLayout>
 
 </LinearLayout>

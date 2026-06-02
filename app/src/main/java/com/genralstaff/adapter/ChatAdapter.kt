@@ -39,6 +39,7 @@ class ChatAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     var onItemClickListener: ((pos: Int) -> Unit)? = null
+    var onModifyCartListener: ((message: String) -> Unit)? = null
     private val TYPE_USER = 0
     private val TYPE_FRIEND = 1
 
@@ -228,6 +229,30 @@ class ChatAdapter(
 
 
                         holder.tvTime.text = timeFormat
+
+                        if (fullText.contains("🛒") || fullText.contains("طلب مقترح") || fullText.contains("Commande proposée")) {
+                            holder.btnModifyCart.visibility = View.VISIBLE
+                            holder.btnModifyCart.setOnClickListener {
+                                onModifyCartListener?.invoke(message.message ?: "")
+                            }
+                        } else {
+                            holder.btnModifyCart.visibility = View.GONE
+                        }
+                        // ✅ Bouton copier sans header/footer
+                        if (fullText.contains("🛒") || fullText.contains("طلب مقترح")) {
+                            holder.btnCopyCart.visibility = View.VISIBLE
+                            holder.btnCopyCart.setOnClickListener {
+                                val lines = fullText.lines()
+                                    .filter { it.trim().startsWith("•") }
+                                    .joinToString("\n")
+                                val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("order", lines))
+                                android.widget.Toast.makeText(mContext, "✅ Copié !", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            holder.btnCopyCart.visibility = View.GONE
+                        }
+
                     }
                 }
 
@@ -253,6 +278,12 @@ class ChatAdapter(
             itemView.findViewById(R.id.right_audio_player)
         val right_uploaded_image: RoundedImageView =
             itemView.findViewById(R.id.right_uploaded_image)
+        val btnModifyCart: android.widget.Button = itemView.findViewById(R.id.btnModifyCart)
+
+        val btnCopyCart: android.widget.Button = itemView.findViewById(R.id.btnCopyCart)
+
+
+
 
     }
 
