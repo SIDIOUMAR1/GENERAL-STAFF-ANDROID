@@ -242,13 +242,22 @@ class ChatAdapter(
                         if (fullText.contains("🛒") || fullText.contains("طلب مقترح")) {
                             holder.btnCopyCart.visibility = View.VISIBLE
                             holder.btnCopyCart.setOnClickListener {
+                                val regex = Regex("• (.+) x(\\d+) =")
                                 val lines = fullText.lines()
-                                    .filter { it.trim().startsWith("•") }
+                                    .mapNotNull { line ->
+                                        val match = regex.find(line)
+                                        if (match != null) {
+                                            val name = match.groupValues[1].trim()
+                                            val qty = match.groupValues[2].trim()
+                                            "• $qty x $name"
+                                        } else null
+                                    }
                                     .joinToString("\n")
                                 val clipboard = mContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 clipboard.setPrimaryClip(android.content.ClipData.newPlainText("order", lines))
                                 android.widget.Toast.makeText(mContext, "✅ Copié !", android.widget.Toast.LENGTH_SHORT).show()
                             }
+
                         } else {
                             holder.btnCopyCart.visibility = View.GONE
                         }
