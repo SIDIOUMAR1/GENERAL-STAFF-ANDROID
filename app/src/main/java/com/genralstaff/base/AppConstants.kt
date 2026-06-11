@@ -13,12 +13,11 @@ const val SOCKET_URL = "https://app.generall.fr/"
 
 //dar
 //
-//const val BASE_URL = "http://192.168.100.135:8000/api/"
-//const val profileBaseUrl = "http://192.168.100.135:8000/uploads/img/users/"
-//const val imageURL = "http://192.168.100.135:8000/uploads/img/adminUsers/"
-//const val SOCKET_URL = "http://192.168.100.135:8000/"
-
-//stage
+//const val BASE_URL = "http://192.168.100.193:8000/api/"
+//const val profileBaseUrl = "http://192.168.100.193:8000/uploads/img/users/"
+//const val imageURL = "http://192.168.100.193:8000/uploads/img/adminUsers/"
+//const val SOCKET_URL = "http://192.168.100.193:8000/"
+//
 //const val BASE_URL = "http://192.168.100.54:8000/api/"
 //const val profileBaseUrl = "http://192.168.100.54:8000/uploads/img/users/"
 //const val imageURL = "http://192.168.100.54:8000/uploads/img/adminUsers/"

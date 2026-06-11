@@ -7,7 +7,8 @@ data class LoginResponse(
     val success: Boolean
 ) {
     data class Body(
-        val user: User
+        val user: User,
+        val shop_id: Int? = null
     ) {
         data class User(
             val country_code: String?,

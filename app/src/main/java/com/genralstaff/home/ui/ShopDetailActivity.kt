@@ -51,6 +51,11 @@ private val progressDialog by lazy { CustomProgressDialog() }
         binding.ivBack.setOnClickListener {
             finish()
         }
+        // ✅ Si gestionnaire (type=4) → cacher le bouton retour
+        val userType = com.genralstaff.utils.MyApplication.prefs?.getString("userType") ?: "3"
+        if (userType == "4") {
+            binding.ivBack.visibility = View.GONE
+        }
         binding.ivAddProduct.setOnClickListener {
             startActivity(
                 Intent(this, CategoriesActivity::class.java)

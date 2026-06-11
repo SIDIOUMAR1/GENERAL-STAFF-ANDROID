@@ -108,27 +108,36 @@ private val progressDialog by lazy { CustomProgressDialog() }
         authViewModel.onLoginResponse().observe(this) { response ->
             response?.let {
                 if (it.code == 200) {
-
-
                     prefs?.saveString("PHONE", it.body.user.phone_no)
                     prefs?.saveString("name", it.body.user.name)
                     MyApplication.prefs?.saveString("IMAGE", it.body.user.profile_pic)
                     prefs?.saveString("userId", it.body.user.id.toString())
+                    prefs?.saveString("userType", it.body.user.type.toString())
                     MyApplication.prefs?.storeisLogin(true)
                     MyApplication.prefs?.saveString("AUTH_KEY_value", it.body.user.token.toString())
+
+                    // ✅ Si gestionnaire (type=4) → sauvegarder shop_id
+                    if (it.body.user.type == 4) {
+                        prefs?.saveString("manager_shop_id", it.body.shop_id?.toString() ?: "")
+                    }
+
                     initializeSockets()
                     lifecycleScope.launch {
                         delay(500)
-                        startActivity(
-                            Intent(
-                                this@LoginActivity,
-                                HomeActivity::class.java
+                        if (it.body.user.type == 4) {
+                            // ✅ Gestionnaire → aller directement au shop
+                            startActivity(
+                                Intent(this@LoginActivity, com.genralstaff.home.ui.ShopDetailActivity::class.java)
+                                    .putExtra("id", it.body.shop_id?.toString() ?: "")
+                                    .putExtra("name", it.body.user.name)
+                                    .putExtra("image", "")
+                                    .putExtra("location", "")
                             )
-                        )
+                        } else {
+                            // ✅ Subadmin normal → HomeActivity
+                            startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                        }
                     }
-
-
-
                 }
             }
         }
