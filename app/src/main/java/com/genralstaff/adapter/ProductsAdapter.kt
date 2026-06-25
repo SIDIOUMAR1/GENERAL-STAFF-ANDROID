@@ -58,6 +58,7 @@ class ProductsAdapter(
                     .putExtra("description", shopItems[position].description.toString())
                     .putExtra("productId", shopItems[position].id.toString())
                     .putExtra("product_medias", shopItems[position].product_medias)
+                    .putExtra("option_groups", shopItems[position].option_groups)
             )
         }
     }

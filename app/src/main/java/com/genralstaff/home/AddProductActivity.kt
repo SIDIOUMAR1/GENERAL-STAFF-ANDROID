@@ -46,7 +46,15 @@ import java.io.OutputStream
 import java.net.URL
 import java.util.Calendar
 import java.util.HashMap
-
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import androidx.appcompat.widget.SwitchCompat
+import androidx.appcompat.widget.AppCompatTextView
+import org.json.JSONArray
+import org.json.JSONObject
 class AddProductActivity : ImagePickerActivityUtility() {
     var id = ""
     var type = ""
@@ -138,6 +146,12 @@ var listString=ArrayList<String>()
             commaSeparatedString =
                 productMedias.joinToString(separator = ",") { it.id.toString() }
 
+            // ✅ Pré-remplir les options/suppléments existants
+            val existingOptionGroups = intent.getSerializableExtra("option_groups") as? ArrayList<ShopItemsResponse.Body.Data.OptionGroup>
+            existingOptionGroups?.forEach { group ->
+                addOptionGroupView(group)
+            }
+
         } else {
             list.add("")
         }
@@ -194,6 +208,9 @@ var listString=ArrayList<String>()
                 getImage(this, 0)
             }
         }
+        binding.btnAddOptionGroup.setOnClickListener {
+            addOptionGroupView()
+        }
         binding.btnSubmit?.setOnClickListener {
             if (binding.edName.text.toString().isEmpty()) {
                 Utils.showErrorDialog(this, getString(R.string.please_enter_product_name))
@@ -240,6 +257,7 @@ var listString=ArrayList<String>()
                             put("price", price.getTextRequestBody())
                             put("shop_id", id.getTextRequestBody())
                             put("type_id", id_cat.toString().getTextRequestBody())
+                            put("option_groups_json", buildOptionGroupsJson().getTextRequestBody())
                         }
 
                         if (type == "edit") {
@@ -262,6 +280,100 @@ var listString=ArrayList<String>()
 
     }
 
+    // ✅ Ajouter un groupe d'options éditable (vide ou pré-rempli si modification)
+    private fun addOptionGroupView(prefillGroup: ShopItemsResponse.Body.Data.OptionGroup? = null) {
+        val groupView = LayoutInflater.from(this).inflate(
+            R.layout.item_option_group_editable, binding.optionGroupsContainer, false
+        )
+        val edGroupName = groupView.findViewById<EditText>(R.id.edGroupName)
+        val switchMultiple = groupView.findViewById<SwitchCompat>(R.id.switchMultiple)
+        val switchRequired = groupView.findViewById<SwitchCompat>(R.id.switchRequired)
+        val btnDeleteGroup = groupView.findViewById<ImageButton>(R.id.btnDeleteGroup)
+        val choicesContainer = groupView.findViewById<LinearLayout>(R.id.choicesContainer)
+        val btnAddChoice = groupView.findViewById<AppCompatTextView>(R.id.btnAddChoice)
+
+        btnDeleteGroup.setOnClickListener {
+            binding.optionGroupsContainer.removeView(groupView)
+        }
+
+        btnAddChoice.setOnClickListener {
+            addOptionChoiceView(choicesContainer)
+        }
+
+        if (prefillGroup != null) {
+            // ✅ Mode édition : pré-remplir avec les valeurs existantes
+            edGroupName.setText(prefillGroup.name)
+            switchMultiple.isChecked = prefillGroup.type == "multiple"
+            switchRequired.isChecked = prefillGroup.required == 1
+            for (choice in prefillGroup.choices) {
+                addOptionChoiceView(choicesContainer, choice.name, choice.price)
+            }
+        } else {
+            // ✅ Mode création : un premier choix vide par défaut
+            addOptionChoiceView(choicesContainer)
+        }
+
+        binding.optionGroupsContainer.addView(groupView)
+    }
+
+    // ✅ Ajouter un choix éditable dans un groupe (vide ou pré-rempli)
+    private fun addOptionChoiceView(container: LinearLayout, prefillName: String? = null, prefillPrice: String? = null) {
+        val choiceView = LayoutInflater.from(this).inflate(
+            R.layout.item_option_choice_editable, container, false
+        )
+        val edChoiceName = choiceView.findViewById<EditText>(R.id.edChoiceName)
+        val edChoicePrice = choiceView.findViewById<EditText>(R.id.edChoicePrice)
+        val btnDeleteChoice = choiceView.findViewById<ImageButton>(R.id.btnDeleteChoice)
+
+        if (prefillName != null) edChoiceName.setText(prefillName)
+        if (prefillPrice != null) edChoicePrice.setText(prefillPrice)
+
+        btnDeleteChoice.setOnClickListener {
+            container.removeView(choiceView)
+        }
+        container.addView(choiceView)
+    }
+
+    // ✅ Construire le JSON des options à partir des vues
+    private fun buildOptionGroupsJson(): String {
+        val groupsArray = JSONArray()
+        for (i in 0 until binding.optionGroupsContainer.childCount) {
+            val groupView = binding.optionGroupsContainer.getChildAt(i)
+            val edGroupName = groupView.findViewById<EditText>(R.id.edGroupName)
+            val switchMultiple = groupView.findViewById<SwitchCompat>(R.id.switchMultiple)
+            val switchRequired = groupView.findViewById<SwitchCompat>(R.id.switchRequired)
+            val choicesContainer = groupView.findViewById<LinearLayout>(R.id.choicesContainer)
+
+            val groupName = edGroupName.text.toString().trim()
+            if (groupName.isEmpty()) continue
+
+            val choicesArray = JSONArray()
+            for (j in 0 until choicesContainer.childCount) {
+                val choiceView = choicesContainer.getChildAt(j)
+                val edChoiceName = choiceView.findViewById<EditText>(R.id.edChoiceName)
+                val edChoicePrice = choiceView.findViewById<EditText>(R.id.edChoicePrice)
+
+                val choiceName = edChoiceName.text.toString().trim()
+                if (choiceName.isEmpty()) continue
+                val choicePrice = edChoicePrice.text.toString().trim().ifEmpty { "0" }
+
+                val choiceObj = JSONObject()
+                choiceObj.put("name", choiceName)
+                choiceObj.put("price", choicePrice)
+                choicesArray.put(choiceObj)
+            }
+
+            if (choicesArray.length() == 0) continue
+
+            val groupObj = JSONObject()
+            groupObj.put("name", groupName)
+            groupObj.put("type", if (switchMultiple.isChecked) "multiple" else "single")
+            groupObj.put("required", if (switchRequired.isChecked) 1 else 0)
+            groupObj.put("choices", choicesArray)
+            groupsArray.put(groupObj)
+        }
+        return groupsArray.toString()
+    }
     @SuppressLint("SetTextI18n")
     private fun viewModelSetupAndResponse() {
 

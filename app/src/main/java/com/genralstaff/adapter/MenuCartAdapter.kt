@@ -1,16 +1,15 @@
 package com.genralstaff.adapter
 
 import android.content.Context
+import androidx.fragment.app.FragmentActivity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.genralstaff.R
-import com.genralstaff.base.imageURL
 import com.genralstaff.responseModel.ShopItemsResponse
+import com.genralstaff.utils.StaffCartLine
 import java.util.Locale
 
 class MenuCartAdapter(
@@ -20,9 +19,13 @@ class MenuCartAdapter(
 ) : RecyclerView.Adapter<MenuCartAdapter.VH>() {
 
     private var allLoadedItems = mutableListOf<ShopItemsResponse.Body.Data>()
-
-    private val quantities = HashMap<Int, Int>()
     private var filteredItems = items.toMutableList()
+
+    // ✅ Chaque ligne représente un produit + ses options sélectionnées (peut y avoir plusieurs lignes du même produit avec options différentes)
+    private val cartLinesList = mutableListOf<StaffCartLine>()
+
+    // ✅ Callback pour ouvrir le sheet d'options (géré par ChatActivity)
+    var onRequestOptions: ((ShopItemsResponse.Body.Data) -> Unit)? = null
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvProductName)
@@ -37,27 +40,76 @@ class MenuCartAdapter(
 
     override fun getItemCount() = filteredItems.size
 
+    private fun quantityForProduct(productId: Int?): Int {
+        return cartLinesList.filter { it.product.id == productId }.sumOf { it.quantity }
+    }
+
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = filteredItems[position]
         holder.tvName.text = item.name
         holder.tvPrice.text = "${item.price} MRU"
-        val qty = quantities[item.id] ?: 0
+        val qty = quantityForProduct(item.id)
         holder.tvQty.text = qty.toString()
 
+        val hasOptions = !item.option_groups.isNullOrEmpty()
+        holder.tvMinus.visibility = if (hasOptions) View.GONE else View.VISIBLE
+
         holder.tvPlus.setOnClickListener {
-            val newQty = (quantities[item.id] ?: 0) + 1
-            quantities[item.id] = newQty
-            holder.tvQty.text = newQty.toString()
-            onQuantityChanged(calculateTotal())
+            if (hasOptions) {
+                onRequestOptions?.invoke(item)
+            } else {
+                addOne(item)
+                notifyItemChanged(position)
+                onQuantityChanged(calculateTotal())
+            }
         }
 
         holder.tvMinus.setOnClickListener {
-            val current = quantities[item.id] ?: 0
-            if (current > 0) {
-                quantities[item.id] = current - 1
-                holder.tvQty.text = (current - 1).toString()
-                onQuantityChanged(calculateTotal())
-            }
+            removeOne(item.id)
+            notifyItemChanged(position)
+            onQuantityChanged(calculateTotal())
+        }
+    }
+
+    // ✅ Ajouter une ligne SANS options (incrémente si une ligne sans options existe déjà)
+    fun addOne(product: ShopItemsResponse.Body.Data) {
+        val existing = cartLinesList.find { it.product.id == product.id && it.selectedOptions.isEmpty() }
+        if (existing != null) {
+            existing.quantity++
+        } else {
+            cartLinesList.add(StaffCartLine(product, 1, emptyList()))
+            if (allLoadedItems.none { it.id == product.id }) allLoadedItems.add(product)
+        }
+    }
+
+    // ✅ Ajouter une ligne AVEC options (toujours une nouvelle ligne)
+    fun addLineWithOptions(product: ShopItemsResponse.Body.Data, options: List<com.genralstaff.utils.SelectedOptionGroup>, quantity: Int) {
+        cartLinesList.add(StaffCartLine(product, quantity, options))
+        if (allLoadedItems.none { it.id == product.id }) allLoadedItems.add(product)
+        notifyDataSetChanged()
+        onQuantityChanged(calculateTotal())
+    }
+
+    fun removeOne(productId: Int?) {
+        val existing = cartLinesList.find { it.product.id == productId && it.selectedOptions.isEmpty() }
+        if (existing != null) {
+            if (existing.quantity > 1) existing.quantity--
+            else cartLinesList.remove(existing)
+        }
+    }
+
+    fun removeLine(line: StaffCartLine) {
+        cartLinesList.remove(line)
+        notifyDataSetChanged()
+        onQuantityChanged(calculateTotal())
+    }
+
+    fun updateLine(oldLine: StaffCartLine, newLine: StaffCartLine) {
+        val index = cartLinesList.indexOf(oldLine)
+        if (index != -1) {
+            cartLinesList[index] = newLine
+            notifyDataSetChanged()
+            onQuantityChanged(calculateTotal())
         }
     }
 
@@ -70,12 +122,10 @@ class MenuCartAdapter(
                 allLoadedItems.add(item)
             }
         }
-
         notifyDataSetChanged()
         onQuantityChanged(calculateTotal())
     }
 
-    // ✅ Recherche par nom
     fun filterGlobal(query: String, allItems: List<ShopItemsResponse.Body.Data>) {
         filteredItems = if (query.isEmpty()) {
             items.toMutableList()
@@ -87,41 +137,18 @@ class MenuCartAdapter(
         }
         notifyDataSetChanged()
     }
-    fun addOne(itemId: Int?) {
-        if (itemId == null) return
-        quantities[itemId] = (quantities[itemId] ?: 0) + 1
-        notifyDataSetChanged()
-        onQuantityChanged(calculateTotal())
-    }
 
-    fun removeOne(itemId: Int?) {
-        if (itemId == null) return
-        val current = quantities[itemId] ?: 0
-        if (current > 0) {
-            quantities[itemId] = current - 1
-            notifyDataSetChanged()
-            onQuantityChanged(calculateTotal())
-        }
-    }
+    private fun calculateTotal(): Double = cartLinesList.sumOf { it.totalPrice }
 
-    private fun calculateTotal(): Double {
-        var total = 0.0
-        allLoadedItems.forEach { item ->
-            val qty = quantities[item.id] ?: 0
-            total += qty * (item.price?.toDoubleOrNull() ?: 0.0)
-        }
-        return total
-    }
-
-    // ✅ Message avec support arabe
     fun getCartSummary(isArabic: Boolean = false): String {
         val lines = mutableListOf<String>()
-        allLoadedItems.forEach { item ->
-            val qty = quantities[item.id] ?: 0
-            if (qty > 0) {
-                val subtotal = qty * (item.price?.toDoubleOrNull() ?: 0.0)
-                lines.add("• ${item.name} x$qty = ${subtotal.toInt()} MRU")
+        cartLinesList.filter { it.quantity > 0 }.forEach { line ->
+            var text = "• ${line.product.name} x${line.quantity}"
+            if (line.optionsSummary.isNotEmpty()) {
+                text += " (${line.optionsSummary})"
             }
+            text += " = ${line.totalPrice.toInt()} MRU"
+            lines.add(text)
         }
         val total = calculateTotal()
         return if (lines.isEmpty()) ""
@@ -132,51 +159,44 @@ class MenuCartAdapter(
         }
     }
 
-    fun hasItems(): Boolean = quantities.values.any { it > 0 }
+    fun hasItems(): Boolean = cartLinesList.any { it.quantity > 0 }
 
-    fun getCartCount(): Int = quantities.values.sum()
+    fun getCartCount(): Int = cartLinesList.sumOf { it.quantity }
 
-    fun getCartItems(): List<Pair<ShopItemsResponse.Body.Data, Int>> {
-        return quantities.entries
-            .filter { it.value > 0 }
-            .mapNotNull { (id, qty) ->
-                val item = allLoadedItems.firstOrNull { it.id == id }
-                if (item != null) Pair(item, qty) else null
-            }
-    }
+    fun getCartLines(): List<StaffCartLine> = cartLinesList.filter { it.quantity > 0 }
+
     fun getCurrentTotal(): Double = calculateTotal()
 
-    fun getQuantities(): HashMap<Int, Int> = HashMap(quantities)
+    // ✅ Sauvegarder/restaurer le panier entre changements de catégorie
+    fun getSavedLines(): List<StaffCartLine> = cartLinesList.toList()
 
-    fun setQuantities(savedQuantities: HashMap<Int, Int>) {
-        quantities.clear()
-        quantities.putAll(savedQuantities)
+    fun setSavedLines(savedLines: List<StaffCartLine>) {
+        cartLinesList.clear()
+        cartLinesList.addAll(savedLines)
         notifyDataSetChanged()
         onQuantityChanged(calculateTotal())
     }
+
+    // ✅ Pré-remplissage simplifié (sans options) à partir d'un message précédent
     fun prefillFromMessage(message: String) {
-        val regex = Regex("(.+) x(\\d+) =")
+        val regex = Regex("(.+) x(\\d+)(?:\\s*\\(.*?\\))? =")
         regex.findAll(message).forEach { match ->
-            val productName = match.groupValues[1]
-                .trim()
-                .replace("• ", "")
-                .replace("•", "")
-                .trim()
+            val productName = match.groupValues[1].trim().replace("• ", "").replace("•", "").trim()
             val qty = match.groupValues[2].toIntOrNull() ?: 0
             if (qty > 0) {
-                // ✅ Matching flexible (insensible à la casse et aux espaces)
                 val item = items.firstOrNull {
                     it.name?.trim()?.lowercase() == productName.lowercase()
                 } ?: items.firstOrNull {
                     it.name?.trim()?.lowercase()?.contains(productName.lowercase()) == true
                 }
                 item?.let {
-                    if (it.id != null) quantities[it.id] = qty
+                    val existing = cartLinesList.find { l -> l.product.id == it.id && l.selectedOptions.isEmpty() }
+                    if (existing != null) existing.quantity = qty
+                    else cartLinesList.add(StaffCartLine(it, qty, emptyList()))
                 }
             }
         }
         notifyDataSetChanged()
         onQuantityChanged(calculateTotal())
     }
-
 }

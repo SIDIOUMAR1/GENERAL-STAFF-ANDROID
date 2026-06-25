@@ -85,7 +85,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
     // ✅ NOUVELLES VARIABLES : audio et localisation utilisateur
     private var audioUserLocation = ""   // vocal emplacement utilisateur (1er vocal)
 
-    private var lastCartQuantities = HashMap<Int, Int>()
+    private var lastCartLines = listOf<com.genralstaff.utils.StaffCartLine>()
 
     var startRecording = false
     var RandomAudioFileName = "ABCDEFGHIJKLMNOP"
@@ -830,7 +830,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
         }
 
         fun updateCartView() {
-            val cartItems = menuAdapter?.getCartItems() ?: return
+            val cartLines = menuAdapter?.getCartLines() ?: return
             val adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
                 override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int) =
                     object : androidx.recyclerview.widget.RecyclerView.ViewHolder(
@@ -838,30 +838,74 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                             .inflate(R.layout.item_menu_product, parent, false)
                     ) {}
 
-                override fun getItemCount() = cartItems.size
+                override fun getItemCount() = cartLines.size
 
                 override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
-                    val (item, qty) = cartItems[position]
-                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductName).text = item.name
-                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductPrice).text =
-                        "${qty} × ${item.price} = ${(qty * (item.price?.toDoubleOrNull() ?: 0.0)).toInt()} MRU"
-                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvQuantity).text = qty.toString()
+                    val line = cartLines[position]
+                    val tvName = holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductName)
+                    val tvPrice = holder.itemView.findViewById<android.widget.TextView>(R.id.tvProductPrice)
+                    val tvQty = holder.itemView.findViewById<android.widget.TextView>(R.id.tvQuantity)
+                    val tvPlus = holder.itemView.findViewById<android.widget.TextView>(R.id.tvPlus)
+                    val tvMinus = holder.itemView.findViewById<android.widget.TextView>(R.id.tvMinus)
 
-                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvPlus).setOnClickListener {
-                        menuAdapter?.addOne(item.id)
-                        updateBadge(menuAdapter?.getCartCount() ?: 0)
-                        updateCartView() // ✅ Refresh cart view
+                    var nameText = line.product.name ?: ""
+                    if (line.optionsSummary.isNotEmpty()) {
+                        nameText += " (${line.optionsSummary})"
                     }
+                    tvName.text = nameText
+                    tvPrice.text = "${line.quantity} × ${line.unitPrice.toInt()} = ${line.totalPrice.toInt()} MRU"
+                    tvQty.text = line.quantity.toString()
 
-                    holder.itemView.findViewById<android.widget.TextView>(R.id.tvMinus).setOnClickListener {
-                        menuAdapter?.removeOne(item.id)
-                        updateBadge(menuAdapter?.getCartCount() ?: 0)
-                        updateCartView() // ✅ Refresh cart view
+                    val hasOptions = !line.product.option_groups.isNullOrEmpty()
+
+                    if (hasOptions) {
+                        // ✅ "+" ouvre le sheet pour modifier les options, "-" supprime la ligne
+                        tvPlus.text = "✏️"
+                        tvMinus.text = "✕"
+                        tvPlus.setOnClickListener {
+                            val sheet = com.genralstaff.home.ui.ProductOptionsBottomSheet()
+                            sheet.product = line.product
+                            sheet.initialQuantity = line.quantity
+                            sheet.initialSelectedOptions = line.selectedOptions
+                            sheet.onAdd = { product, selectedOptions, qty ->
+                                val newLine = com.genralstaff.utils.StaffCartLine(product, qty, selectedOptions)
+                                menuAdapter?.updateLine(line, newLine)
+                                updateCartView()
+                            }
+                            sheet.show(supportFragmentManager, "EditStaffOptions")
+                        }
+                        tvMinus.setOnClickListener {
+                            menuAdapter?.removeLine(line)
+                            updateCartView()
+                        }
+                    } else {
+                        tvPlus.text = "+"
+                        tvMinus.text = "−"
+                        tvPlus.setOnClickListener {
+                            menuAdapter?.addOne(line.product)
+                            updateBadge(menuAdapter?.getCartCount() ?: 0)
+                            updateCartView()
+                        }
+                        tvMinus.setOnClickListener {
+                            menuAdapter?.removeOne(line.product.id)
+                            updateBadge(menuAdapter?.getCartCount() ?: 0)
+                            updateCartView()
+                        }
                     }
                 }
             }
             rvCart.adapter = adapter
         }
+        // ✅ Ouvrir le sheet de sélection d'options pour un nouveau produit (depuis la liste du menu)
+        fun openStaffProductOptions(product: com.genralstaff.responseModel.ShopItemsResponse.Body.Data, adapter: MenuCartAdapter?) {
+            val sheet = com.genralstaff.home.ui.ProductOptionsBottomSheet()
+            sheet.product = product
+            sheet.onAdd = { p, selectedOptions, qty ->
+                adapter?.addLineWithOptions(p, selectedOptions, qty)
+            }
+            sheet.show(supportFragmentManager, "StaffProductOptions")
+        }
+
 
         // ✅ Toggle entre produits et panier
         flCartBadge.setOnClickListener {
@@ -890,18 +934,20 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                                 updateTotalLabel(total)
                                 updateBadge(menuAdapter?.getCartCount() ?: 0)
                             }
+                            menuAdapter?.onRequestOptions = { product ->
+                                openStaffProductOptions(product, menuAdapter)
+                            }
                             menuAdapter?.updateItems(items)
-                            if (lastCartQuantities.isNotEmpty()) {
-                                menuAdapter?.setQuantities(lastCartQuantities)
+                            if (lastCartLines.isNotEmpty()) {
+                                menuAdapter?.setSavedLines(lastCartLines)
                             }
                             rvMenu.adapter = menuAdapter
                             if (previousMessage.isNotEmpty()) menuAdapter?.prefillFromMessage(previousMessage)
                         } else {
                             menuAdapter?.updateItems(items)
-                            if (lastCartQuantities.isNotEmpty()) {
-                                menuAdapter?.setQuantities(lastCartQuantities)
+                            if (lastCartLines.isNotEmpty()) {
+                                menuAdapter?.setSavedLines(lastCartLines)
                             }
-
                             if (previousMessage.isNotEmpty()) menuAdapter?.prefillFromMessage(previousMessage)
                         }
                     }
@@ -970,7 +1016,7 @@ class ChatActivity : ImagePickerActivityUtility(), SocketManager.Observer {
                 if (shopId.isNotEmpty()) put("shop_id", shopId.toInt())
             }
             socketManager.send_message(jsonObject)
-            lastCartQuantities = adapter.getQuantities()
+            lastCartLines = adapter.getSavedLines()
             bottomSheet.dismiss()
             Utils.showToast(this, "✅ تم إرسال الطلب!")
         }

@@ -22,7 +22,8 @@ data class ShopItemsResponse(
             val price: String,
             val product_medias: ArrayList<ProductMedia>,
             val shop_id: Int,
-            val user_id: Int
+            val user_id: Int,
+            val option_groups: ArrayList<OptionGroup>? = null
         ):Serializable {
             data class ProductMedia(
                 val createdAt: String,
@@ -33,6 +34,22 @@ data class ShopItemsResponse(
                 val thumbnail: String,
                 val updatedAt: String,
                 val user_id: Int
+            ):Serializable
+
+            data class OptionGroup(
+                val id: Int,
+                val product_id: Int,
+                val name: String,
+                val type: String,
+                val required: Int,
+                val choices: ArrayList<OptionChoice>
+            ):Serializable
+
+            data class OptionChoice(
+                val id: Int,
+                val group_id: Int,
+                val name: String,
+                val price: String
             ):Serializable
         }
 

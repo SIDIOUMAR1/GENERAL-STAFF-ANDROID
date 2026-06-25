@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_marginBottom="@dimen/_6sdp">
+
+    <EditText
+        android:id="@+id/edChoiceName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="Nom (ex: Barbecue)"
+        android:textSize="@dimen/_10sdp"
+        android:textColor="@color/black"
+        android:background="@android:color/white"
+        android:padding="@dimen/_6sdp" />
+
+    <EditText
+        android:id="@+id/edChoicePrice"
+        android:layout_width="@dimen/_60sdp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/_6sdp"
+        android:hint="Prix +"
+        android:inputType="numberDecimal"
+        android:textSize="@dimen/_10sdp"
+        android:textColor="@color/black"
+        android:background="@android:color/white"
+        android:padding="@dimen/_6sdp" />
+
+    <ImageButton
+        android:id="@+id/btnDeleteChoice"
+        android:layout_width="@dimen/_24sdp"
+        android:layout_height="@dimen/_24sdp"
+        android:layout_marginStart="@dimen/_6sdp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+</LinearLayout>
